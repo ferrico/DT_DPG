@@ -43,8 +43,8 @@ process.L1DTConfigFromDB.debug = False
 process.load('EventFilter.ScalersRawToDigi.ScalersRawToDigi_cfi')
 process.load('RecoLuminosity.LumiProducer.lumiProducer_cfi')
 
-process.load('EventFilter.L1TRawToDigi.l1tRawtoDigiBMTF_cfi')
-
+# process.load('EventFilter.L1TRawToDigi.l1tRawtoDigiBMTF_cfi')
+process.load('EventFilter.L1TRawToDigi.bmtfDigis_cfi')
 
 process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
 
@@ -99,7 +99,7 @@ process.myDTNtuple.outputFile = "DTNtuple.root"
 process.myDTNtuple.dtTrigSimDCCLabel = cms.InputTag("dtTriggerPrimitiveDigis")
 process.myDTNtuple.dtDigiLabel = cms.InputTag("dtunpacker")
 
-process.myDTNtuple.bmtfOutputDigis = cms.InputTag("BMTFStage2Digis:BMTF")
+process.myDTNtuple.bmtfOutputDigis = cms.InputTag("bmtfDigis:BMTF")
 
 ## RPC unpacking
 process.load("EventFilter.RPCRawToDigi.rpcUnpackingModule_cfi")
@@ -112,8 +112,8 @@ process.load("RecoLocalMuon.RPCRecHit.rpcRecHits_cfi")
 process.rpcRecHits.rpcDigiLabel = cms.InputTag('rpcUnpackingModule')
 
 
-process.p = cms.Path(process.DTMuonSelection * process.dtunpacker * process.twinMuxStage2Digis  * process.scalersRawToDigi * process.lumiProducer * process.dtTriggerPrimitiveDigis + process.BMTFStage2Digis + process.rpcUnpackingModule + process.rpcRecHits + process.myDTNtuple)
-
+# process.p = cms.Path(process.DTMuonSelection * process.dtunpacker * process.twinMuxStage2Digis  * process.scalersRawToDigi * process.lumiProducer * process.dtTriggerPrimitiveDigis + process.BMTFStage2Digis + process.rpcUnpackingModule + process.rpcRecHits + process.myDTNtuple)
+process.p = cms.Path(process.DTMuonSelection * process.dtunpacker * process.twinMuxStage2Digis  * process.scalersRawToDigi * process.lumiProducer * process.dtTriggerPrimitiveDigis + process.bmtfDigis + process.rpcUnpackingModule + process.rpcRecHits + process.myDTNtuple)
 # Output
 process.out = cms.OutputModule("PoolOutputModule"
                                , outputCommands = cms.untracked.vstring(
