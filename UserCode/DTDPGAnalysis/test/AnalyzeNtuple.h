@@ -158,29 +158,30 @@ public :
    std::vector<int> bmtfwh;
    std::vector<int> bmtfFineBit;
    
-   std::vector<int> twinMuxRpcBx;
-   std::vector<int> twinMuxRpcStrip;
-   std::vector<int> twinMuxRpcRegion;
-   std::vector<int> twinMuxRpcRing;
-   std::vector<int> twinMuxRpcStation;
-   std::vector<int> twinMuxRpcLayer;
-   std::vector<int> twinMuxRpcSubsector;
-   std::vector<int> twinMuxRpcRoll;
-   std::vector<int> twinMuxRpcTrIndex;
-   std::vector<int> twinMuxRpcDet;
-   std::vector<int> twinMuxRpcSubdetId;
-   std::vector<int> twinMuxRpcRawId;
+   std::vector<int> RpcDigiTwinMuxBx;
+   std::vector<int> RpcDigiTwinMuxStrip;
+   std::vector<int> RpcDigiTwinMuxRegion;
+   std::vector<int> RpcDigiTwinMuxRing;
+   std::vector<int> RpcDigiTwinMuxStation;
+   std::vector<int> RpcDigiTwinMuxLayer;
+   std::vector<int> RpcDigiTwinMuxSector;
+   std::vector<int> RpcDigiTwinMuxSubsector;
+   std::vector<int> RpcDigiTwinMuxRoll;
+   std::vector<int> RpcDigiTwinMuxTrIndex;
+   std::vector<int> RpcDigiTwinMuxDet;
+   std::vector<int> RpcDigiTwinMuxSubdetId;
+   std::vector<int> RpcDigiTwinMuxRawId;
    
-   std::vector<int> UnpackingRpcRecHitRegion;
-   std::vector<int> UnpackingRpcRecHitClusterSize;
-   std::vector<int> UnpackingRpcRecHitStrip;
-   std::vector<int> UnpackingRpcRecHitBx;
-   std::vector<int> UnpackingRpcRecHitStation;
-   std::vector<int> UnpackingRpcRecHitSector;
-   std::vector<int> UnpackingRpcRecHitLayer;
-   std::vector<int> UnpackingRpcRecHitSubsector;
-   std::vector<int> UnpackingRpcRecHitRoll;
-   std::vector<int> UnpackingRpcRecHitRing;
+   std::vector<int> RpcRecHitTwinMuxRegion;
+   std::vector<int> RpcRecHitTwinMuxClusterSize;
+   std::vector<int> RpcRecHitTwinMuxStrip;
+   std::vector<int> RpcRecHitTwinMuxBx;
+   std::vector<int> RpcRecHitTwinMuxStation;
+   std::vector<int> RpcRecHitTwinMuxSector;
+   std::vector<int> RpcRecHitTwinMuxLayer;
+   std::vector<int> RpcRecHitTwinMuxSubsector;
+   std::vector<int> RpcRecHitTwinMuxRoll;
+   std::vector<int> RpcRecHitTwinMuxRing;
 
    // List of branches
    TBranch        *b_runnumber;   //!
@@ -318,28 +319,31 @@ public :
    TBranch        *b_bmtftrAddress;   //!
    TBranch        *b_bmtfwh;   //!
    TBranch        *b_bmtfFineBit;   //!
-   TBranch        *b_twinMuxRpcBx;   //!
-   TBranch        *b_twinMuxRpcStrip;   //!
-   TBranch        *b_twinMuxRpcRegion;   //!
-   TBranch        *b_twinMuxRpcRing;   //!
-   TBranch        *b_twinMuxRpcStation;   //!
-   TBranch        *b_twinMuxRpcLayer;   //!
-   TBranch        *b_twinMuxRpcSubsector;   //!
-   TBranch        *b_twinMuxRpcRoll;   //!
-   TBranch        *b_twinMuxRpcTrIndex;   //!
-   TBranch        *b_twinMuxRpcDet;   //!
-   TBranch        *b_twinMuxRpcSubdetId;   //!
-   TBranch        *b_twinMuxRpcRawId;   //!
-   TBranch        *b_UnpackingRpcRecHitRegion; //!
-   TBranch        *b_UnpackingRpcRecHitClusterSize; //!
-   TBranch        *b_UnpackingRpcRecHitStrip; //!
-   TBranch        *b_UnpackingRpcRecHitBx; //!
-   TBranch        *b_UnpackingRpcRecHitStation; //!
-   TBranch        *b_UnpackingRpcRecHitSector; //!
-   TBranch        *b_UnpackingRpcRecHitLayer; //!
-   TBranch        *b_UnpackingRpcRecHitSubsector; //!
-   TBranch        *b_UnpackingRpcRecHitRoll; //!
-   TBranch        *b_UnpackingRpcRecHitRing; //!
+   TBranch		  *b_NirpcdigiTwinMux; //!
+   TBranch        *b_RpcDigiTwinMuxBx;   //!
+   TBranch        *b_RpcDigiTwinMuxStrip;   //!
+   TBranch        *b_RpcDigiTwinMuxRegion;   //!
+   TBranch        *b_RpcDigiTwinMuxRing;   //!
+   TBranch        *b_RpcDigiTwinMuxStation;   //!
+   TBranch        *b_RpcDigiTwinMuxLayer;   //!
+   TBranch        *b_RpcDigiTwinMuxSector;   //!
+   TBranch        *b_RpcDigiTwinMuxSubsector;   //!
+   TBranch        *b_RpcDigiTwinMuxRoll;   //!
+   TBranch        *b_RpcDigiTwinMuxTrIndex;   //!
+   TBranch        *b_RpcDigiTwinMuxDet;   //!
+   TBranch        *b_RpcDigiTwinMuxSubdetId;   //!
+   TBranch        *b_RpcDigiTwinMuxRawId;   //!
+   TBranch		  *b_NirpcrechitsTwinMux; //!
+   TBranch        *b_RpcRecHitTwinMuxRegion; //!
+   TBranch        *b_RpcRecHitTwinMuxClusterSize; //!
+   TBranch        *b_RpcRecHitTwinMuxStrip; //!
+   TBranch        *b_RpcRecHitTwinMuxBx; //!
+   TBranch        *b_RpcRecHitTwinMuxStation; //!
+   TBranch        *b_RpcRecHitTwinMuxSector; //!
+   TBranch        *b_RpcRecHitTwinMuxLayer; //!
+   TBranch        *b_RpcRecHitTwinMuxSubsector; //!
+   TBranch        *b_RpcRecHitTwinMuxRoll; //!
+   TBranch        *b_RpcRecHitTwinMuxRing; //!
 
    AnalyzeNtuple(TTree *tree=0);
    virtual ~AnalyzeNtuple();
@@ -520,28 +524,29 @@ void AnalyzeNtuple::Init(TTree *tree)
     bmtftrAddress = 0;
     bmtfwh = 0;
     bmtfFineBit = 0;
-    twinMuxRpcBx = 0;
-    twinMuxRpcStrip = 0;
-    twinMuxRpcRegion = 0;
-    twinMuxRpcRing = 0;
-    twinMuxRpcStation = 0;
-    twinMuxRpcLayer = 0;
-    twinMuxRpcSubsector = 0;
-    twinMuxRpcRoll = 0;
-    twinMuxRpcTrIndex = 0;
-    twinMuxRpcDet = 0;
-    twinMuxRpcSubdetId = 0;
-    twinMuxRpcRawId = 0;
-    UnpackingRpcRecHitRegion = 0;
-    UnpackingRpcRecHitClusterSize = 0;
-    UnpackingRpcRecHitStrip = 0;
-    UnpackingRpcRecHitBx = 0;
-    UnpackingRpcRecHitStation = 0;
-    UnpackingRpcRecHitSector = 0;
-    UnpackingRpcRecHitLayer = 0;
-    UnpackingRpcRecHitSubsector = 0;
-    UnpackingRpcRecHitRoll = 0;
-    UnpackingRpcRecHitRing = 0;
+    RpcDigiTwinMuxBx = 0;
+    RpcDigiTwinMuxStrip = 0;
+    RpcDigiTwinMuxRegion = 0;
+    RpcDigiTwinMuxRing = 0;
+    RpcDigiTwinMuxStation = 0;
+    RpcDigiTwinMuxLayer = 0;
+    RpcDigiTwinMuxSector = 0;
+    RpcDigiTwinMuxSubsector = 0;
+    RpcDigiTwinMuxRoll = 0;
+    RpcDigiTwinMuxTrIndex = 0;
+    RpcDigiTwinMuxDet = 0;
+    RpcDigiTwinMuxSubdetId = 0;
+    RpcDigiTwinMuxRawId = 0;
+    RpcRecHitTwinMuxRegion = 0;
+    RpcRecHitTwinMuxClusterSize = 0;
+    RpcRecHitTwinMuxStrip = 0;
+    RpcRecHitTwinMuxBx = 0;
+    RpcRecHitTwinMuxStation = 0;
+    RpcRecHitTwinMuxSector = 0;
+    RpcRecHitTwinMuxLayer = 0;
+    RpcRecHitTwinMuxSubsector = 0;
+    RpcRecHitTwinMuxRoll = 0;
+    RpcRecHitTwinMuxRing = 0;
    // Set branch addresses and branch pointers
    if (!tree) return;
    fChain = tree;
@@ -685,28 +690,31 @@ void AnalyzeNtuple::Init(TTree *tree)
    fChain->SetBranchAddress("bmtftrAddress", &bmtftrAddress, &b_bmtftrAddress);
    fChain->SetBranchAddress("bmtfwh", &bmtfwh, &b_bmtfwh);
    fChain->SetBranchAddress("bmtfFineBit", &bmtfFineBit, &b_bmtfFineBit);
-   fChain->SetBranchAddress("twinMuxRpcBx", &TwinMux_Rpc_bx, &b_twinMuxRpcBx);
-   fChain->SetBranchAddress("twinMuxRpcStrip", &TwinMux_Rpc_strip, &b_twinMuxRpcStrip);
-   fChain->SetBranchAddress("twinMuxRpcRegion", &TwinMux_Rpc_region, &b_twinMuxRpcRegion);
-   fChain->SetBranchAddress("twinMuxRpcRing", &TwinMux_Rpc_ring, &b_twinMuxRpcRing);
-   fChain->SetBranchAddress("twinMuxRpcStation", &TwinMux_Rpc_station, &b_twinMuxRpcStation);
-   fChain->SetBranchAddress("twinMuxRpcLayer", &TwinMux_Rpc_layer, &b_twinMuxRpcLayer);
-   fChain->SetBranchAddress("twinMuxRpcSubsector", &TwinMux_Rpc_subsector, &b_twinMuxRpcSubsector);
-   fChain->SetBranchAddress("twinMuxRpcRoll", &TwinMux_Rpc_roll, &b_twinMuxRpcRoll);
-   fChain->SetBranchAddress("twinMuxRpcTrIndex", &TwinMux_Rpc_trIndex, &b_twinMuxRpcTrIndex);
-   fChain->SetBranchAddress("twinMuxRpcDet", &TwinMux_Rpc_det, &b_twinMuxRpcDet);
-   fChain->SetBranchAddress("twinMuxRpcSubdetId", &TwinMux_Rpc_subdetId, &b_twinMuxRpcSubdetId);
-   fChain->SetBranchAddress("twinMuxRpcRawId", &TwinMux_Rpc_rawId, &b_twinMuxRpcRawId);
-   fChain->SetBranchAddress("UnpackingRpcRecHitRegion", &Unpacking_Rpc_RecHit_region, &b_UnpackingRpcRecHitRegion);                      
-   fChain->SetBranchAddress("UnpackingRpcRecHitClusterSize", &Unpacking_Rpc_RecHit_clusterSize, &b_UnpackingRpcRecHitClusterSize);               
-   fChain->SetBranchAddress("UnpackingRpcRecHitStrip", &Unpacking_Rpc_RecHit_strip, &b_UnpackingRpcRecHitStrip);                         
-   fChain->SetBranchAddress("UnpackingRpcRecHitBx", &Unpacking_Rpc_RecHit_bx, &b_UnpackingRpcRecHitBx);                          
-   fChain->SetBranchAddress("UnpackingRpcRecHitStation", &Unpacking_Rpc_RecHit_station, &b_UnpackingRpcRecHitStation);                   
-   fChain->SetBranchAddress("UnpackingRpcRecHitSector", &Unpacking_Rpc_RecHit_sector, &b_UnpackingRpcRecHitSector);              
-   fChain->SetBranchAddress("UnpackingRpcRecHitLayer", &Unpacking_Rpc_RecHit_layer, &b_UnpackingRpcRecHitLayer);                         
-   fChain->SetBranchAddress("UnpackingRpcRecHitSubsector", &Unpacking_Rpc_RecHit_subsector, &b_UnpackingRpcRecHitSubsector);             
-   fChain->SetBranchAddress("UnpackingRpcRecHitRoll", &Unpacking_Rpc_RecHit_roll,& b_UnpackingRpcRecHitRoll);                    
-   fChain->SetBranchAddress("UnpackingRpcRecHitRing", &Unpacking_Rpc_RecHit_ring, &b_UnpackingRpcRecHitRing); 
+   fChain->SetBranchAddress("NirpcdigiTwinMux", &irpcdigi_TwinMux, &b_NirpcdigiTwinMux);
+   fChain->SetBranchAddress("RpcDigiTwinMuxBx", &TwinMux_Rpc_bx, &b_RpcDigiTwinMuxBx);
+   fChain->SetBranchAddress("RpcDigiTwinMuxStrip", &TwinMux_Rpc_strip, &b_RpcDigiTwinMuxStrip);
+   fChain->SetBranchAddress("RpcDigiTwinMuxRegion", &TwinMux_Rpc_region, &b_RpcDigiTwinMuxRegion);
+   fChain->SetBranchAddress("RpcDigiTwinMuxRing", &TwinMux_Rpc_ring, &b_RpcDigiTwinMuxRing);
+   fChain->SetBranchAddress("RpcDigiTwinMuxStation", &TwinMux_Rpc_station, &b_RpcDigiTwinMuxStation);
+   fChain->SetBranchAddress("RpcDigiTwinMuxLayer", &TwinMux_Rpc_layer, &b_RpcDigiTwinMuxLayer);
+   fChain->SetBranchAddress("RpcDigiTwinMuxSector", &TwinMux_Rpc_Sector, &b_RpcDigiTwinMuxSector);
+   fChain->SetBranchAddress("RpcDigiTwinMuxSubsector", &TwinMux_Rpc_subsector, &b_RpcDigiTwinMuxSubsector);
+   fChain->SetBranchAddress("RpcDigiTwinMuxRoll", &TwinMux_Rpc_roll, &b_RpcDigiTwinMuxRoll);
+   fChain->SetBranchAddress("RpcDigiTwinMuxTrIndex", &TwinMux_Rpc_trIndex, &b_RpcDigiTwinMuxTrIndex);
+   fChain->SetBranchAddress("RpcDigiTwinMuxDet", &TwinMux_Rpc_det, &b_RpcDigiTwinMuxDet);
+   fChain->SetBranchAddress("RpcDigiTwinMuxSubdetId", &TwinMux_Rpc_subdetId, &b_RpcDigiTwinMuxSubdetId);
+   fChain->SetBranchAddress("RpcDigiTwinMuxRawId", &TwinMux_Rpc_rawId, &b_RpcDigiTwinMuxRawId);
+   fChain->SetBranchAddress("NirpcrechitsTwinMux", &irpcrechits_TwinMux, &b_NirpcrechitsTwinMux);
+   fChain->SetBranchAddress("RpcRecHitTwinMuxRegion", &Unpacking_Rpc_RecHit_region, &b_RpcRecHitTwinMuxRegion);                      
+   fChain->SetBranchAddress("RpcRecHitTwinMuxClusterSize", &Unpacking_Rpc_RecHit_clusterSize, &b_RpcRecHitTwinMuxClusterSize);               
+   fChain->SetBranchAddress("RpcRecHitTwinMuxStrip", &Unpacking_Rpc_RecHit_strip, &b_RpcRecHitTwinMuxStrip);                         
+   fChain->SetBranchAddress("RpcRecHitTwinMuxBx", &Unpacking_Rpc_RecHit_bx, &b_RpcRecHitTwinMuxBx);                          
+   fChain->SetBranchAddress("RpcRecHitTwinMuxStation", &Unpacking_Rpc_RecHit_station, &b_RpcRecHitTwinMuxStation);                   
+   fChain->SetBranchAddress("RpcRecHitTwinMuxSector", &Unpacking_Rpc_RecHit_sector, &b_RpcRecHitTwinMuxSector);              
+   fChain->SetBranchAddress("RpcRecHitTwinMuxLayer", &Unpacking_Rpc_RecHit_layer, &b_RpcRecHitTwinMuxLayer);                         
+   fChain->SetBranchAddress("RpcRecHitTwinMuxSubsector", &Unpacking_Rpc_RecHit_subsector, &b_RpcRecHitTwinMuxSubsector);             
+   fChain->SetBranchAddress("RpcRecHitTwinMuxRoll", &Unpacking_Rpc_RecHit_roll,& b_RpcRecHitTwinMuxRoll);                    
+   fChain->SetBranchAddress("RpcRecHitTwinMuxRing", &Unpacking_Rpc_RecHit_ring, &b_RpcRecHitTwinMuxRing); 
    Notify();
 }
 

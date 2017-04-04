@@ -152,6 +152,10 @@ private:
   short igttt; // legacy
   short ihlt;
   short irpcrechits;
+  short irpcdigi_TwinMux;
+  short irpcrechits_TwinMux;
+  short bmtf_size;
+
 
   reco::BeamSpot beamspot;
 
