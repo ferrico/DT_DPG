@@ -147,16 +147,35 @@ public :
    Short_t         Ngmtcands;
    
    int bmtfSize;
-   std::vector<float> bmtfPt;
-   std::vector<float> bmtfEta;
-   std::vector<float> bmtfPhi;
-   std::vector<int> bmtfqual;
-   std::vector<int> bmtfch;
-   std::vector<int> bmtfbx;
-   std::vector<int> bmtfprocessor;
-   std::vector<int> bmtftrAddress;
-   std::vector<int> bmtfwh;
-   std::vector<int> bmtfFineBit;
+   std::vector<short int> bmtfPt;
+   std::vector<short int> bmtfEta;
+   std::vector<short int> bmtfPhi;
+   std::vector<short int> bmtfGlobalPhi;
+   std::vector<short int> bmtfqual;
+   std::vector<short int> bmtfch;
+   std::vector<short int> bmtfbx;
+   std::vector<short int> bmtfprocessor;
+   std::vector<short int> bmtftrAddress;
+   std::vector<short int> bmtfwh;
+   std::vector<short int> bmtfFineBit;
+   
+	int bmtfPhSize;
+	std::vector<int> bmtfPhBx;
+	std::vector<int> bmtfPhWh;
+	std::vector<int> bmtfPhSe;
+	std::vector<int> bmtfPhSt;
+	std::vector<float>  bmtfPhAng;
+	std::vector<float>  bmtfPhBandAng;
+	std::vector<int> bmtfPhCode;
+	std::vector<int> bmtfPhTs2Tag;
+	
+	int bmtfThSize;
+	std::vector<int>   bmtfThBx;
+	std::vector<int>   bmtfThWh;
+	std::vector<int>   bmtfThSe;
+	std::vector<int>   bmtfThSt;
+	std::vector<int> bmtfThTheta;
+	std::vector<int> bmtfThCode;
    
    std::vector<int> RpcDigiTwinMuxBx;
    std::vector<int> RpcDigiTwinMuxStrip;
@@ -312,6 +331,7 @@ public :
    TBranch        *b_Ngmtcands;   //!
    TBranch        *b_bmtfEta;   //!
    TBranch        *b_bmtfPhi;   //!
+   TBranch        *b_bmtfGloablPhi;   //!
    TBranch        *b_bmtfqual;   //!
    TBranch        *b_bmtfch;   //!
    TBranch        *b_bmtfbx;   //!
@@ -319,6 +339,22 @@ public :
    TBranch        *b_bmtftrAddress;   //!
    TBranch        *b_bmtfwh;   //!
    TBranch        *b_bmtfFineBit;   //!
+   TBranch        *b_bmtfPhSize;
+   TBranch        *b_bmtfPhBx;
+   TBranch        *b_bmtfPhWh;
+   TBranch        *b_bmtfPhSe;
+   TBranch        *b_bmtfPhSt;
+   TBranch        *b_bmtfPhAng;
+   TBranch        *b_bmtfPhBandAng;
+   TBranch        *b_bmtfPhCode;
+   TBranch        *b_bmtfPhTs2Tag;
+   TBranch        *b_bmtfThSize;
+   TBranch        *b_bmtfThBx;
+   TBranch        *b_bmtfThWh;
+   TBranch        *b_bmtfThSe;
+   TBranch        *b_bmtfThSt;
+   TBranch        *b_bmtfThTheta;
+   TBranch        *b_bmtfThCode;
    TBranch		  *b_NirpcdigiTwinMux; //!
    TBranch        *b_RpcDigiTwinMuxBx;   //!
    TBranch        *b_RpcDigiTwinMuxStrip;   //!
@@ -517,6 +553,7 @@ void AnalyzeNtuple::Init(TTree *tree)
     bmtfPt = 0;
     bmtfEta = 0;
     bmtfPhi = 0;
+    bmtfGlobalPhi = 0;
     bmtfqual = 0;
     bmtfch = 0;
     bmtfbx = 0;
@@ -524,6 +561,22 @@ void AnalyzeNtuple::Init(TTree *tree)
     bmtftrAddress = 0;
     bmtfwh = 0;
     bmtfFineBit = 0;
+    bmtfPhSize = 0;
+    bmtfPhBx = 0;
+    bmtfPhWh = 0;
+    bmtfPhSe = 0;
+    bmtfPhSt = 0;
+    bmtfPhAng = 0;
+    bmtfPhBandAng = 0;
+    bmtfPhCode = 0;
+    bmtfPhTs2Tag = 0;
+	bmtfThSize = 0;
+    bmtfThBx = 0;
+    bmtfThWh = 0;
+    bmtfThSe = 0;
+    bmtfThSt = 0;
+    bmtfThTheta = 0;
+    bmtfThCode = 0;
     RpcDigiTwinMuxBx = 0;
     RpcDigiTwinMuxStrip = 0;
     RpcDigiTwinMuxRegion = 0;
@@ -683,6 +736,7 @@ void AnalyzeNtuple::Init(TTree *tree)
    fChain->SetBranchAddress("bmtfPt", &bmtfPt, &b_bmtfPt);
    fChain->SetBranchAddress("bmtfEta", &bmtfEta, &b_bmtfEta);
    fChain->SetBranchAddress("bmtfPhi", &bmtfPhi, &b_bmtfPhi);
+   fChain->SetBranchAddress("bmtfGlobalPhi", &bmtfGlobalPhi, &b_bmtfGlobalPhi);
    fChain->SetBranchAddress("bmtfqual", &bmtfqual, &b_bmtfqual);
    fChain->SetBranchAddress("bmtfch", &bmtfch, &b_bmtfch);
    fChain->SetBranchAddress("bmtfbx", &bmtfbx, &b_bmtfbx);
@@ -690,6 +744,22 @@ void AnalyzeNtuple::Init(TTree *tree)
    fChain->SetBranchAddress("bmtftrAddress", &bmtftrAddress, &b_bmtftrAddress);
    fChain->SetBranchAddress("bmtfwh", &bmtfwh, &b_bmtfwh);
    fChain->SetBranchAddress("bmtfFineBit", &bmtfFineBit, &b_bmtfFineBit);
+   fChain->SetBranchAddress("bmtfPhSize", &bmtfPhSize, &b_bmtfPhSize);
+   fChain->SetBranchAddress("bmtfPhBx", &bmtfPhBx, &b_bmtfPhBx);
+   fChain->SetBranchAddress("bmtfPhWh", &bmtfPhWh, &b_bmtfPhWh);
+   fChain->SetBranchAddress("bmtfPhSe", &bmtfPhSe, &b_bmtfPhSe);
+   fChain->SetBranchAddress("bmtfPhSt", &bmtfPhSt, &b_bmtfPhSt);
+   fChain->SetBranchAddress("bmtfPhAng", &bmtfPhAng, &b_bmtfPhAng);
+   fChain->SetBranchAddress("bmtfPhBandAng", &bmtfPhBandAng, &b_bmtfPhBandAng);
+   fChain->SetBranchAddress("bmtfPhCode", &bmtfPhCode, &b_bmtfPhCode);
+   fChain->SetBranchAddress("bmtfPhTs2Tag", &bmtfPhTs2Tag, &b_bmtfPhTs2Tag);
+   fChain->SetBranchAddress("bmtfThSize", &bmtfThSize, &b_bmtfThSize);
+   fChain->SetBranchAddress("bmtfThBx", &bmtfThBx, &b_bmtfThBx);
+   fChain->SetBranchAddress("bmtfThWh", &bmtfThWh, &b_bmtfThWh);
+   fChain->SetBranchAddress("bmtfThSe", &bmtfThSe, &b_bmtfThSe);
+   fChain->SetBranchAddress("bmtfThSt", &bmtfThSt, &b_bmtfThSt);
+   fChain->SetBranchAddress("bmtfThTheta", &bmtfThTheta, &b_bmtfThTheta);
+   fChain->SetBranchAddress("bmtfThCode", &bmtfThCode, &b_bmtfThCode);
    fChain->SetBranchAddress("NirpcdigiTwinMux", &irpcdigi_TwinMux, &b_NirpcdigiTwinMux);
    fChain->SetBranchAddress("RpcDigiTwinMuxBx", &TwinMux_Rpc_bx, &b_RpcDigiTwinMuxBx);
    fChain->SetBranchAddress("RpcDigiTwinMuxStrip", &TwinMux_Rpc_strip, &b_RpcDigiTwinMuxStrip);

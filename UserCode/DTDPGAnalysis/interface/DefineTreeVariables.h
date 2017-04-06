@@ -206,16 +206,35 @@ std::vector<int>   rpc_roll;
 std::vector<int>   rpc_ring;
 
 int Bmtf_Size;
-std::vector<float> Bmtf_Pt;
-std::vector<float> Bmtf_Eta;
-std::vector<float> Bmtf_Phi;
-std::vector<int> Bmtf_qual;
-std::vector<int> Bmtf_ch;
-std::vector<int> Bmtf_bx;
-std::vector<int> Bmtf_processor;
-std::vector<int> Bmtf_trAddress;
-std::vector<int> Bmtf_wh;
-std::vector<int> Bmtf_FineBit;
+std::vector<short int> Bmtf_Pt;
+std::vector<short int> Bmtf_Eta;
+std::vector<short int> Bmtf_Phi;
+std::vector<short int> Bmtf_GlobalPhi;
+std::vector<short int> Bmtf_qual;
+std::vector<short int> Bmtf_ch;
+std::vector<short int> Bmtf_bx;
+std::vector<short int> Bmtf_processor;
+std::vector<short int> Bmtf_trAddress;
+std::vector<short int> Bmtf_wh;
+std::vector<short int> Bmtf_FineBit;
+
+int Bmtf_phSize;
+std::vector<int> Bmtf_phBx;
+std::vector<int> Bmtf_phWh;
+std::vector<int> Bmtf_phSe;
+std::vector<int> Bmtf_phSt;
+std::vector<float>  Bmtf_phAng;
+std::vector<float>  Bmtf_phBandAng;
+std::vector<int> Bmtf_phCode;
+std::vector<int> Bmtf_phTs2Tag;
+
+int Bmtf_thSize;
+std::vector<int>   Bmtf_thBx;
+std::vector<int>   Bmtf_thWh;
+std::vector<int>   Bmtf_thSe;
+std::vector<int>   Bmtf_thSt;
+std::vector<int> Bmtf_thTheta;
+std::vector<int> Bmtf_thCode; 
 
 std::vector<int> RpcDigi_TwinMux_bx;
 std::vector<int> RpcDigi_TwinMux_strip;

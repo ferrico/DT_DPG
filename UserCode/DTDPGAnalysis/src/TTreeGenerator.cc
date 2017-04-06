@@ -84,6 +84,8 @@
 #include "DataFormats/RPCDigi/interface/RPCDigi.h"
 #include <DataFormats/MuonData/interface/MuonDigiCollection.h>
 
+
+
 #include <iostream>
 #include <vector>
 #include "TMath.h"
@@ -165,12 +167,12 @@ TTreeGenerator::TTreeGenerator(const edm::ParameterSet& pset):
        
   lumiInputTag_      = pset.getParameter<edm::InputTag>("lumiInputTag");
   lumiProducerToken_ = consumes<LumiDetails, edm::InLumi>(lumiInputTag_);
-  
+
   bmtfPhInputTag_ = consumes<L1MuDTChambPhContainer>(pset.getParameter<edm::InputTag>("bmtfInputPhDigis"));
   bmtfThInputTag_ = consumes<L1MuDTChambThContainer>(pset.getParameter<edm::InputTag>("bmtfInputThDigis"));
-//bmtfOutputTag_ = consumes<l1t::RegionalMuonCandBxCollection>(pset.getParameter<edm::InputTag>("bmtfOutputDigis"));
-  bmtfInputTag_ = pset.getParameter<edm::InputTag>("bmtfOutputDigis");
-  bmtfOutputTag_ = consumes<l1t::RegionalMuonCandBxCollection>(edm::InputTag(bmtfInputTag_));
+  bmtfOutputTag_ = consumes<l1t::RegionalMuonCandBxCollection>(pset.getParameter<edm::InputTag>("bmtfOutputDigis"));
+//   bmtfInputTag_ = pset.getParameter<edm::InputTag>("bmtfOutputDigis");
+//   bmtfOutputTag_ = consumes<l1t::RegionalMuonCandBxCollection>(edm::InputTag(bmtfInputTag_));
 
    OnlyBarrel_ = pset.getParameter<bool>("OnlyBarrel");
 
@@ -1050,14 +1052,6 @@ void TTreeGenerator::analyzeRPCunpacking(const edm::Event& event)
 
 void TTreeGenerator::analyzeBMTF(const edm::Event& event)
 {
-  //l1bmtf->Reset();
-
-  edm::Handle<L1MuDTChambPhContainer > myL1MuDTChambPhContainer;
-  event.getByToken(bmtfPhInputTag_,myL1MuDTChambPhContainer);
-
-  edm::Handle<L1MuDTChambThContainer > myL1MuDTChambThContainer;
-  event.getByToken(bmtfThInputTag_,myL1MuDTChambThContainer);
-
 ///Output of BMTF
   int ctr = 0;
   edm::Handle<l1t::RegionalMuonCandBxCollection> mycoll;
@@ -1072,16 +1066,19 @@ void TTreeGenerator::analyzeBMTF(const edm::Event& event)
 			      Bmtf_Pt.push_back(mu->hwPt()*0.5);
 			      Bmtf_Eta.push_back(mu->hwEta()*0.010875);
 			      Bmtf_FineBit.push_back(mu->hwHF());
-			      float phi = 2*mu->hwPhi()*TMath::Pi()/576;
-// 			      phi = mu->processor()*48 + localPhi;
-// 			      phi += 576 - 24;
-// 			      phi = phi % 576;
-			      Bmtf_Phi.push_back(phi);
-			      // Bmtf_Phi.push_back(mu->hwPhi());
+			      Bmtf_Phi.push_back(mu->hwPhi());
+			      //2*mu->hwPhi()*TMath::Pi()/576;
+			      int phi = 0;
+			      phi = mu->processor()*48 + mu->hwPhi();
+			      phi += 576 - 24;
+			      phi = phi % 576;
+			      Bmtf_GlobalPhi.push_back(phi);
 		    	  Bmtf_qual.push_back(mu->hwQual());
 	    		  Bmtf_ch.push_back(mu->hwSign());
     			  Bmtf_bx.push_back(i);
 			      Bmtf_processor.push_back(mu->processor());
+// 			      l1upgradetfmuon_.tfMuonLink.push_back(mu->link());
+// 			      l1upgradetfmuon_.tfMuonHwSignValid.push_back(mu->hwSignValid());
     			 // Bmtf__.Bmtf_trAddress.push_back(mu->hwTrackAddress());
 			      std::map<int, int>  trAdd;
 	    		  trAdd = mu->trackAddress();
@@ -1091,14 +1088,74 @@ void TTreeGenerator::analyzeBMTF(const edm::Event& event)
     			  Bmtf_trAddress.push_back(trAdd[3]);
 	    		  Bmtf_trAddress.push_back(trAdd[4]);
 			      Bmtf_trAddress.push_back(trAdd[5]);
-
     			} // for mu
-    			
 		        bmtf_size = ctr;
  	 } // for i
   } //if
   else 
       edm::LogInfo("L1Prompt") << "can't find L1MuMBTrackContainer";
+      
+
+  edm::Handle<L1MuDTChambPhContainer> bmtfPhInputs;  
+  event.getByToken(bmtfPhInputTag_, bmtfPhInputs);
+  
+  if(!(bmtfPhInputs.isValid())) std::cout<<"no  ok"<<std::endl;
+  
+   L1MuDTChambPhContainer::Phi_Container const *PhContainer = bmtfPhInputs->getContainer();
+
+   Bmtf_phSize = PhContainer->size();
+   int iphtr=0;
+   for( L1MuDTChambPhContainer::Phi_Container::const_iterator DTPhDigiItr =  PhContainer->begin() ;
+       DTPhDigiItr != PhContainer->end(); ++DTPhDigiItr ){
+		      Bmtf_phBx.push_back     (  DTPhDigiItr->bxNum() );
+    		  Bmtf_phTs2Tag.push_back     ( DTPhDigiItr->Ts2Tag() );
+		      Bmtf_phWh.push_back     (  DTPhDigiItr->whNum() );
+	    	  Bmtf_phSe.push_back     (  DTPhDigiItr->scNum() );
+	    	  Bmtf_phSt.push_back     (  DTPhDigiItr->stNum() );
+    		  Bmtf_phAng.push_back    (  DTPhDigiItr->phi()   );
+		      Bmtf_phBandAng.push_back(  DTPhDigiItr->phiB()  );
+    		  Bmtf_phCode.push_back   (  DTPhDigiItr->code()  );
+		      iphtr++;
+    }
+
+
+
+  edm::Handle<L1MuDTChambThContainer > bmtfThInputs;
+  event.getByToken(bmtfThInputTag_, bmtfThInputs); 
+  
+   L1MuDTChambThContainer::The_Container const *ThContainer = bmtfThInputs->getContainer();
+   
+   if(!(bmtfThInputs.isValid())) std::cout<<"no  ok"<<std::endl;
+
+   int ithtr=0;
+   Bmtf_thSize = ThContainer->size();
+
+   for( L1MuDTChambThContainer::The_Container::const_iterator
+	 DTThDigiItr =  ThContainer->begin() ;
+       DTThDigiItr != ThContainer->end() ;
+       ++DTThDigiItr )
+     {
+
+      Bmtf_thBx.push_back( DTThDigiItr->bxNum()  );
+      Bmtf_thWh.push_back( DTThDigiItr->whNum() );
+      Bmtf_thSe.push_back( DTThDigiItr->scNum() );
+      Bmtf_thSt.push_back( DTThDigiItr->stNum() );
+
+      ostringstream  ss1, ss2; 
+      ss1.clear(); ss2.clear();
+      ss1<<"9"; ss2<<"9";
+
+      for(int j=0; j<7; j++){
+        ss1<<DTThDigiItr->position(j);
+        ss2<<DTThDigiItr->code(j) ;
+      }
+      Bmtf_thTheta.push_back(stoi(ss1.str())) ;
+      Bmtf_thCode.push_back(stoi(ss2.str()));
+
+      ithtr++;
+
+    }     
+
   
 }
 
@@ -1333,6 +1390,7 @@ void TTreeGenerator::beginJob()
    tree_->Branch("bmtfPt", &Bmtf_Pt);
    tree_->Branch("bmtfEta", &Bmtf_Eta);
    tree_->Branch("bmtfPhi", &Bmtf_Phi);
+   tree_->Branch("bmtfGlobalPhi", &Bmtf_GlobalPhi);
    tree_->Branch("bmftFineBit", &Bmtf_FineBit);
    tree_->Branch("bmtfqual", &Bmtf_qual);
    tree_->Branch("bmtfch", &Bmtf_ch);
@@ -1341,6 +1399,25 @@ void TTreeGenerator::beginJob()
    tree_->Branch("bmtfwh", &Bmtf_wh);
    tree_->Branch("bmtftrAddress", &Bmtf_trAddress);
    tree_->Branch("bmtfSize", &Bmtf_Size);
+   
+   tree_->Branch("bmtfPhSize", &Bmtf_phSize);
+   tree_->Branch("bmtfPhBx", &Bmtf_phBx);
+   tree_->Branch("bmtfPhWh", &Bmtf_phWh);
+   tree_->Branch("bmtfPhSe", &Bmtf_phSe);
+   tree_->Branch("bmtfPhSt", &Bmtf_phSt);
+   tree_->Branch("bmtfPhAng", &Bmtf_phAng);
+   tree_->Branch("bmtfPhBandAng", &Bmtf_phBandAng);
+   tree_->Branch("bmtfPhCode", &Bmtf_phCode);
+   tree_->Branch("bmtfPhTs2Tag", &Bmtf_phTs2Tag);
+   
+   tree_->Branch("bmtfThSize", &Bmtf_thSize);
+   tree_->Branch("bmtfThBx", &Bmtf_thBx);
+   tree_->Branch("bmtfThWh", &Bmtf_thWh);
+   tree_->Branch("bmtfThSe", &Bmtf_thSe);
+   tree_->Branch("bmtfThSt", &Bmtf_thSt);
+   tree_->Branch("bmtfThTheta", &Bmtf_thTheta);
+   tree_->Branch("bmtfThCode", &Bmtf_thCode);
+  
 
    // Unpacking RPC
    tree_->Branch("NirpcdigiTwinMux", &irpcdigi_TwinMux);
@@ -1560,6 +1637,7 @@ inline void TTreeGenerator::clear_Arrays()
    Bmtf_Pt.clear();
    Bmtf_Eta.clear();
    Bmtf_Phi.clear();
+   Bmtf_GlobalPhi.clear();
    Bmtf_qual.clear();
    Bmtf_ch.clear();
    Bmtf_bx.clear();
@@ -1567,6 +1645,22 @@ inline void TTreeGenerator::clear_Arrays()
    Bmtf_trAddress.clear();
    Bmtf_wh.clear();
    Bmtf_FineBit.clear();
+
+	Bmtf_phBx.clear();
+	Bmtf_phWh.clear();
+	Bmtf_phSe.clear();
+	Bmtf_phSt.clear();
+	Bmtf_phAng.clear();
+	Bmtf_phBandAng.clear();
+	Bmtf_phCode.clear();
+	Bmtf_phTs2Tag.clear();
+
+	Bmtf_thBx.clear();
+	Bmtf_thWh.clear();
+	Bmtf_thSe.clear();
+  	Bmtf_thSt.clear();
+	Bmtf_thTheta.clear();
+	Bmtf_thCode.clear();
 
    RpcDigi_TwinMux_bx.clear();
    RpcDigi_TwinMux_strip.clear();
