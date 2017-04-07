@@ -1077,9 +1077,6 @@ void TTreeGenerator::analyzeBMTF(const edm::Event& event)
 	    		  Bmtf_ch.push_back(mu->hwSign());
     			  Bmtf_bx.push_back(i);
 			      Bmtf_processor.push_back(mu->processor());
-// 			      l1upgradetfmuon_.tfMuonLink.push_back(mu->link());
-// 			      l1upgradetfmuon_.tfMuonHwSignValid.push_back(mu->hwSignValid());
-    			 // Bmtf__.Bmtf_trAddress.push_back(mu->hwTrackAddress());
 			      std::map<int, int>  trAdd;
 	    		  trAdd = mu->trackAddress();
 		    	  int wheel = pow(-1,trAdd[0]) * trAdd[1];
