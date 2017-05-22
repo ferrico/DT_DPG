@@ -52,11 +52,13 @@ process.source = cms.Source("PoolSource",
 
   fileNames = cms.untracked.vstring
   (
-    '/store/express/Run2016H/ExpressPhysics/FEVT/Express-v2/000/283/820/00000/000BE88F-ED97-E611-B962-02163E011D7E.root',
-    '/store/express/Run2016H/ExpressPhysics/FEVT/Express-v2/000/283/820/00000/0092B080-0798-E611-AD7E-02163E01184D.root',
-    '/store/express/Run2016H/ExpressPhysics/FEVT/Express-v2/000/283/820/00000/00958F3E-FE97-E611-A000-02163E014255.root',
-    '/store/express/Run2016H/ExpressPhysics/FEVT/Express-v2/000/283/820/00000/00B04838-E597-E611-882E-02163E0120A4.root',
-    '/store/express/Run2016H/ExpressPhysics/FEVT/Express-v2/000/283/820/00000/00C5C0B0-EE97-E611-A10B-FA163EE76B26.root',
+'/store/express/Run2016G/ExpressPhysics/FEVT/Express-v1/000/280/385/00002/30938120-E176-E611-B572-02163E0141BF.root',
+# '/store/express/Run2016H/ExpressPhysics/FEVT/Express-v2/000/283/820/00000/000BE88F-ED97-E611-B962-02163E011D7E.root',
+# '/store/express/Run2016H/ExpressPhysics/FEVT/Express-v2/000/283/820/00000/0092B080-0798-E611-AD7E-02163E01184D.root',
+# '/store/express/Run2016H/ExpressPhysics/FEVT/Express-v2/000/283/820/00000/00958F3E-FE97-E611-A000-02163E014255.root',
+# '/store/express/Run2016H/ExpressPhysics/FEVT/Express-v2/000/283/820/00000/00B04838-E597-E611-882E-02163E0120A4.root',
+# '/store/express/Run2016H/ExpressPhysics/FEVT/Express-v2/000/283/820/00000/00C5C0B0-EE97-E611-A10B-FA163EE76B26.root',
+
 
   ),
   secondaryFileNames = cms.untracked.vstring(
@@ -95,6 +97,7 @@ process.load("UserCode/DTDPGAnalysis/DTTTreGenerator_cfi")
 process.options = cms.untracked.PSet(wantSummary = cms.untracked.bool(False))
 
 process.myDTNtuple.localDTmuons = cms.untracked.bool(False)
+process.myDTNtuple.dtExtrapolation = cms.bool(True) #Set False if DT extrapolation on RPC layer is not needed
 process.myDTNtuple.outputFile = "DTNtuple.root"
 process.myDTNtuple.dtTrigSimDCCLabel = cms.InputTag("dtTriggerPrimitiveDigis")
 process.myDTNtuple.dtDigiLabel = cms.InputTag("dtunpacker")

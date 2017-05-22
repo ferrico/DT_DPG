@@ -26,7 +26,6 @@
 #include "DataFormats/L1Trigger/interface/Muon.h"
 
 class DTTTrigBaseSync;
-
 //
 // class declaration
 //
@@ -35,9 +34,13 @@ class TTreeGenerator : public edm::EDAnalyzer {
 public:
   explicit TTreeGenerator(const edm::ParameterSet&);
   ~TTreeGenerator() {};
-  
+
+  RPCRecHitCollection* thePoints(){return _ThePoints;}
   
 private:
+
+  RPCRecHitCollection* _ThePoints; 
+  edm::OwnVector<RPCRecHit> RPCPointVector;
 
   virtual void beginJob() ;
   virtual void beginRun(const edm::Run&, const edm::EventSetup&) {};
@@ -53,7 +56,8 @@ private:
 
   void fill_digi_variables(edm::Handle<DTDigiCollection> dtdigis);
   void fill_digi_variablesSim(edm::Handle< DTDigiSimLinkCollection> dtdigisSim);
-  void fill_dtsegments_variables(edm::Handle<DTRecSegment4DCollection> segments4D, const DTGeometry* dtGeom_);
+//   void fill_dtsegments_variables(edm::Handle<DTRecSegment4DCollection> segments4D, const DTGeometry* dtGeom_);
+  void fill_dtsegments_variables(edm::Handle<DTRecSegment4DCollection> segments4D, const DTGeometry* dtGeom_, const RPCGeometry* rpcGeom_, const edm::EventSetup& iSetup);
   void fill_cscsegments_variables(edm::Handle<CSCSegmentCollection> cscsegments);
   void fill_twinmuxout_variables(edm::Handle<L1MuDTChambPhContainer> localTriggerTwinMuxOut);
   void fill_twinmuxin_variables(edm::Handle<L1MuDTChambPhContainer> localTriggerTwinMuxIn);
@@ -67,7 +71,8 @@ private:
   void fill_dtz_info(const DTSLRecSegment2D* zSeg, const GeomDet* geomDet);
   void analyzeBMTF(const edm::Event& e);
   void analyzeRPCunpacking(const edm::Event& e);
-  void analyzeUnpackingRpcRecHit(const edm::Event& e);
+  void analyzeUnpackingRpcRecHit(const edm::Event& e, const RPCGeometry* rpcGeom_);
+  void extrapolate_DTsegment_onRPC(edm::Handle<DTRecSegment4DCollection> segments4D, const DTGeometry* dtGeom_, const RPCGeometry* rpcGeom_, const edm::EventSetup& iSetup);
 
   TrajectoryStateOnSurface cylExtrapTrkSam(reco::TrackRef track, const float rho) const;
   FreeTrajectoryState freeTrajStateMuon(const reco::TrackRef track) const;
@@ -112,6 +117,7 @@ private:
   edm::EDGetTokenT<RPCRecHitCollection> UnpackingRpcRecHitToken_;
    
       bool OnlyBarrel_;
+      bool dtExtrapolation_;
 
   bool runOnRaw_;
   bool runOnSimulation_;
@@ -152,6 +158,10 @@ private:
   short irpcdigi_TwinMux;
   short irpcrechits_TwinMux;
   short bmtf_size;
+  short DT_segment_onRPC;
+  
+  float MaxD = 80.0;
+  float eyr = 0.5;
 
 
   reco::BeamSpot beamspot;

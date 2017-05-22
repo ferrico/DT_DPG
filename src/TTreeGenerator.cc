@@ -74,14 +74,23 @@
 #include <DataFormats/RPCDigi/interface/RPCDigiCollection.h>
 #include <DataFormats/RPCRecHit/interface/RPCRecHitCollection.h>
 #include <DataFormats/MuonDetId/interface/RPCDetId.h>
+#include <Geometry/RPCGeometry/interface/RPCGeomServ.h>
+#include <Geometry/RPCGeometry/interface/RPCGeometry.h>
+#include "Geometry/RPCGeometry/interface/RPCRoll.h" 
 
 #include "CalibMuon/DTDigiSync/interface/DTTTrigBaseSync.h"
 #include "CalibMuon/DTDigiSync/interface/DTTTrigSyncFactory.h"
 #include "TrackingTools/GeomPropagators/interface/StraightLinePlaneCrossing.h"
 #include "UserCode/DTDPGAnalysis/interface/TTreeGenerator.h"
+#include "UserCode/DTDPGAnalysis/interface/DTSegmentToRPC.h"
 
 #include "DataFormats/RPCDigi/interface/RPCDigi.h"
 #include <DataFormats/MuonData/interface/MuonDigiCollection.h>
+
+#include "FWCore/Framework/interface/ESHandle.h"
+#include <Geometry/CommonTopologies/interface/RectangularStripTopology.h>
+
+#include "RecoLocalMuon/RPCRecHit/interface/RPCPointProducer.h"
 
 #include <iostream>
 #include <vector>
@@ -90,6 +99,45 @@
 
 using namespace std;
 using namespace reco;
+
+ObjectMap* ObjectMap::mapInstance = NULL;
+
+ObjectMap* ObjectMap::GetInstance(const edm::EventSetup& iSetup){
+  if (mapInstance == NULL){
+    mapInstance = new ObjectMap(iSetup);
+  }
+  return mapInstance;
+}
+
+ObjectMap::ObjectMap(const edm::EventSetup& iSetup)
+{
+  edm::ESHandle<RPCGeometry> rpcGeo;
+  edm::ESHandle<DTGeometry> dtGeo;
+  
+  iSetup.get<MuonGeometryRecord>().get(rpcGeo);
+  iSetup.get<MuonGeometryRecord>().get(dtGeo);
+  
+  for (TrackingGeometry::DetContainer::const_iterator it=rpcGeo->dets().begin();it<rpcGeo->dets().end();it++){
+    if(dynamic_cast< const RPCChamber* >( *it ) != 0 ){
+      auto ch = dynamic_cast< const RPCChamber* >( *it ); 
+      std::vector< const RPCRoll*> roles = (ch->rolls());
+      for(std::vector<const RPCRoll*>::const_iterator r = roles.begin();r != roles.end(); ++r){
+      		RPCDetId rpcId = (*r)->id();
+      		int region=rpcId.region();
+      		if(region==0){
+      				int wheel=rpcId.ring();
+      				int sector=rpcId.sector();
+      				int station=rpcId.station();
+      				DTStationIndex ind(region,wheel,sector,station);
+      				std::set<RPCDetId> myrolls;
+      				if (rollstoreDT.find(ind)!=rollstoreDT.end()) myrolls=rollstoreDT[ind];
+      				myrolls.insert(rpcId);
+      				rollstoreDT[ind]=myrolls;
+    		}
+      }
+	}
+  }
+}
 
 TTreeGenerator::TTreeGenerator(const edm::ParameterSet& pset):
       rpcToken_(consumes<MuonDigiCollection<RPCDetId,RPCDigi> > (pset.getParameter<edm::InputTag>("rpcLabel"))),
@@ -171,6 +219,8 @@ TTreeGenerator::TTreeGenerator(const edm::ParameterSet& pset):
 
    OnlyBarrel_ = pset.getParameter<bool>("OnlyBarrel");
 
+   dtExtrapolation_ = pset.getParameter<bool>("dtExtrapolation");
+
 // unpacking Rpc RecHit
 // UnpackingRpcRecHitLabel_  = pset.getParameter<edm::InputTag>("UnpackingRpcRecHitLabel");
 //   UnpackingRpcRecHitToken_  = consumes<RPCRecHitCollection>(edm::InputTag(UnpackingRpcRecHitLabel_));
@@ -221,6 +271,10 @@ void TTreeGenerator::analyze(const edm::Event& event, const edm::EventSetup& con
    edm::ESHandle<DTGeometry> dtGeomH;
    context.get<MuonGeometryRecord>().get(dtGeomH);
    const DTGeometry* dtGeom_ = dtGeomH.product();
+   
+   edm::ESHandle<RPCGeometry> rpcGeomH;  
+   context.get<MuonGeometryRecord>().get(rpcGeomH);
+   const RPCGeometry* rpcGeom_ = rpcGeomH.product();
 
 
   //retrieve the beamspot info
@@ -262,17 +316,17 @@ void TTreeGenerator::analyze(const edm::Event& event, const edm::EventSetup& con
   edm::Handle<CSCSegmentCollection> cscsegments;
   event.getByToken(cscSegmentToken_, cscsegments);
 
-  edm::Handle<L1MuDTChambPhContainer> localTriggerTwinMuxOut;
-  bool hasPhiTwinMuxOut=false;
-  if(runOnRaw_) hasPhiTwinMuxOut=event.getByToken(dtTrigTwinMuxOutToken_,localTriggerTwinMuxOut);
-
-  edm::Handle<L1MuDTChambPhContainer> localTriggerTwinMuxIn;
-  bool hasPhiTwinMuxIn=false;
-  if(runOnRaw_) hasPhiTwinMuxIn=event.getByToken(dtTrigTwinMuxInToken_,localTriggerTwinMuxIn);
-
-  edm::Handle<L1MuDTChambThContainer> localTriggerTwinMux_Th;
-  bool hasThetaTwinMux=false;
-  if(runOnRaw_) hasThetaTwinMux=event.getByToken(dtTrigTwinMux_ThToken_,localTriggerTwinMux_Th);
+//   edm::Handle<L1MuDTChambPhContainer> localTriggerTwinMuxOut;
+//   bool hasPhiTwinMuxOut=false;
+//   if(runOnRaw_) hasPhiTwinMuxOut=event.getByToken(dtTrigTwinMuxOutToken_,localTriggerTwinMuxOut);
+// 
+//   edm::Handle<L1MuDTChambPhContainer> localTriggerTwinMuxIn;
+//   bool hasPhiTwinMuxIn=false;
+//   if(runOnRaw_) hasPhiTwinMuxIn=event.getByToken(dtTrigTwinMuxInToken_,localTriggerTwinMuxIn);
+// 
+//   edm::Handle<L1MuDTChambThContainer> localTriggerTwinMux_Th;
+//   bool hasThetaTwinMux=false;
+//   if(runOnRaw_) hasThetaTwinMux=event.getByToken(dtTrigTwinMux_ThToken_,localTriggerTwinMux_Th);
 
   edm::Handle<reco::MuonCollection> MuList;
   if(!localDTmuons_) event.getByToken(staMuToken_,MuList);
@@ -363,36 +417,39 @@ void TTreeGenerator::analyze(const edm::Event& event, const edm::EventSetup& con
 
 
   //DT SEGMENTS
-  fill_dtsegments_variables(dtsegments4D, dtGeom_);
+//   fill_dtsegments_variables(dtsegments4D, dtGeom_);
+  fill_dtsegments_variables(dtsegments4D, dtGeom_, rpcGeom_, context);
 
   //CSC SEGMENTS
-  if(!localDTmuons_) fill_cscsegments_variables(cscsegments);
+//   if(!localDTmuons_) fill_cscsegments_variables(cscsegments);
 
   //TwinMux
-  if(runOnRaw_ && hasPhiTwinMuxIn) fill_twinmuxin_variables(localTriggerTwinMuxIn);
-  if(runOnRaw_ && hasPhiTwinMuxOut) fill_twinmuxout_variables(localTriggerTwinMuxOut);
-  if(runOnRaw_ && hasThetaTwinMux) fill_twinmuxth_variables(localTriggerTwinMux_Th);
-
+//   if(runOnRaw_ && hasPhiTwinMuxIn) fill_twinmuxin_variables(localTriggerTwinMuxIn);
+//   if(runOnRaw_ && hasPhiTwinMuxOut) fill_twinmuxout_variables(localTriggerTwinMuxOut);
+//   if(runOnRaw_ && hasThetaTwinMux) fill_twinmuxth_variables(localTriggerTwinMux_Th);
+// 
   //MUONS
   if(!localDTmuons_) fill_muons_variables(MuList);
 
   //GMT
-  if(!localDTmuons_) fill_gmt_variables(gmt); // legacy
+//   if(!localDTmuons_) fill_gmt_variables(gmt); // legacy
 
   //GT
-  if(runOnRaw_ && !localDTmuons_) fill_gt_variables(gtrc,menu); // legacy
+//   if(runOnRaw_ && !localDTmuons_) fill_gt_variables(gtrc,menu); // legacy
     
   //HLT
-  if(!localDTmuons_) fill_hlt_variables(event,hltresults);
+//   if(!localDTmuons_) fill_hlt_variables(event,hltresults);
 
   // RPC
   if(!localDTmuons_) fill_rpc_variables(event,rpcHits);
   
-   analyzeBMTF(event);
+//    analyzeBMTF(event);
 
-   analyzeRPCunpacking(event);
+//    analyzeRPCunpacking(event);
 
-   analyzeUnpackingRpcRecHit(event);
+   analyzeUnpackingRpcRecHit(event, rpcGeom_);
+   
+//    extrapolate_DTsegment_onRPC(dtsegments4D, dtGeom_, rpcGeom_, context);
   
   tree_->Fill();
 
@@ -439,9 +496,8 @@ void TTreeGenerator::fill_digi_variablesSim(edm::Handle<DTDigiSimLinkCollection>
   }
   return;
 }
-
-
-void TTreeGenerator::fill_dtsegments_variables(edm::Handle<DTRecSegment4DCollection> segments4D, const DTGeometry* dtGeom_)
+// void TTreeGenerator::fill_dtsegments_variables(edm::Handle<DTRecSegment4DCollection> segments4D, const DTGeometry* dtGeom_)
+void TTreeGenerator::fill_dtsegments_variables(edm::Handle<DTRecSegment4DCollection> segments4D, const DTGeometry* dtGeom_, const RPCGeometry* rpcGeom_, const edm::EventSetup& iSetup)
 {
 
   idtsegments = 0;
@@ -559,10 +615,145 @@ void TTreeGenerator::fill_dtsegments_variables(edm::Handle<DTRecSegment4DCollect
 	new ((*segm4D_zHits_TimeCali)[idtsegments]) TVectorF(dummyfloat);
       }
       idtsegments++;
-    }
-  }
+
+  
+  if(dtExtrapolation_){
+  
+  	DT_segment_onRPC = 0;
+	
+	if(segments4D->size()>10){ //Too many segments in this event we are not doing the extrapolation
+		std::cout<<"-----------------------------Too many segments in this event we are not doing the extrapolation"<<std::endl;
+	}
+	else{   
+		
+	    std::map<DTChamberId,int> DTSegmentCounter;
+		
+		DTChamberId DTId = segment4D->chamberId();
+		
+// 		if(DTSegmentCounter[DTId]!=1 || DTId.station()==4){
+// 			std::cout<<"DT \t \t More than one segment in this chamber, or we are in Station 4"<<std::endl;
+// 			continue;
+// 		}
+
+		std::cout<<" ok sto estrapolando "<<std::endl;
+				
+		int dtWheel = DTId.wheel();
+		int dtStation = DTId.station();
+		int dtSector = DTId.sector();      
+		
+		LocalPoint segmentPosition= segment4D->localPosition();
+		LocalVector segmentDirection=segment4D->localDirection();
+		
+		const GeomDet* gdet=dtGeom_->idToDet(segment4D->geographicalId());
+		const BoundPlane & DTSurface = gdet->surface();	 
+		
+		if(segment4D->dimension()!=4) continue;  //check if the dimension of the segment is 4
+		if((segment4D->phiSegment()->recHits()).size()<7) continue; //check if there are 2 phi superlayers fired (at least 7hits)
+		if((segment4D->zSegment()->recHits()).size()<4) continue; //check if there are at least 4 hits for the Z projection
+   
+		float Xo=segmentPosition.x();
+		float Yo=segmentPosition.y();
+		float Zo=segmentPosition.z();
+		float dx=segmentDirection.x();
+		float dy=segmentDirection.y();
+		float dz=segmentDirection.z();
+     
+		ObjectMap* TheObject = ObjectMap::GetInstance(iSetup);
+		DTStationIndex theindex(0,dtWheel,dtSector,dtStation);
+		std::set<RPCDetId> rollsForThisDT = TheObject->GetInstance(iSetup)->GetRolls(theindex);
+		assert(rollsForThisDT.size()>=1);		
+
+		for (std::set<RPCDetId>::iterator iteraRoll = rollsForThisDT.begin();iteraRoll != rollsForThisDT.end(); iteraRoll++){
+			const RPCRoll* rollasociated = rpcGeom_->roll(*iteraRoll);
+			RPCDetId rpcId = rollasociated->id();
+			const BoundPlane & RPCSurface = rollasociated->surface(); 
+	
+			RPCGeomServ rpcsrv(rpcId);
+			std::string nameRoll = rpcsrv.name();
+
+			GlobalPoint CenterPointRollGlobal = RPCSurface.toGlobal(LocalPoint(0,0,0));
+
+			LocalPoint CenterRollinDTFrame = DTSurface.toLocal(CenterPointRollGlobal);
+ 	
+			float D=CenterRollinDTFrame.z();
+	
+			float X=Xo+dx*D/dz;
+			float Y=Yo+dy*D/dz;
+			float Z=D;
+	
+			const RectangularStripTopology* top_= dynamic_cast<const RectangularStripTopology*> (&(rollasociated->topology()));
+			LocalPoint xmin = top_->localPosition(0.);
+			LocalPoint xmax = top_->localPosition((float)rollasociated->nstrips());
+			float rsize = fabs( xmax.x()-xmin.x() );
+			float stripl = top_->stripLength();
+	
+			float stripw = top_->pitch();
+
+			float extrapolatedDistance = sqrt((X-Xo)*(X-Xo)+(Y-Yo)*(Y-Yo)+(Z-Zo)*(Z-Zo));
+		
+			if(extrapolatedDistance<=MaxD){ 
+			  GlobalPoint GlobalPointExtrapolated = DTSurface.toGlobal(LocalPoint(X,Y,Z));
+			  LocalPoint PointExtrapolatedRPCFrame = RPCSurface.toLocal(GlobalPointExtrapolated);
+			
+			  if(fabs(PointExtrapolatedRPCFrame.z()) < 1. && 
+			     fabs(PointExtrapolatedRPCFrame.x()) < rsize*eyr && 
+			     fabs(PointExtrapolatedRPCFrame.y()) < stripl*eyr){
+
+			    LocalVector segmentDirection=segment4D->localDirection();
+			    float dx=segmentDirection.x();
+			    float dz=segmentDirection.z();
+			    float cosal = dx/sqrt(dx*dx+dz*dz);
+			    float angle = acos(cosal)*180/3.1415926;
+			    			    
+			    RPCRecHit RPCPoint(rpcId,0,LocalPoint(PointExtrapolatedRPCFrame.x(),PointExtrapolatedRPCFrame.y(),angle));
+
+				float dt_loc_x = PointExtrapolatedRPCFrame.x();
+				float dt_loc_y = PointExtrapolatedRPCFrame.y();
+				float dt_loc_z = PointExtrapolatedRPCFrame.z();
+				float dt_glob_x = GlobalPointExtrapolated.x();
+				float dt_glob_y = GlobalPointExtrapolated.y();
+				float dt_glob_z = GlobalPointExtrapolated.z();
+				float dt_glob_eta = GlobalPointExtrapolated.eta();
+				float dt_glob_phi = GlobalPointExtrapolated.phi();
+				
+				DT_extrapolated_OnRPC_BX.push_back(RPCPoint.BunchX());
+				
+				DT_extrapolated_OnRPC_Loc_x.push_back(dt_loc_x);
+				DT_extrapolated_OnRPC_Loc_y.push_back(dt_loc_y);
+				DT_extrapolated_OnRPC_Loc_z.push_back(dt_loc_z);
+				
+				DT_extrapolated_OnRPC_Glob_x.push_back(dt_glob_x);
+				DT_extrapolated_OnRPC_Glob_y.push_back(dt_glob_y);
+				DT_extrapolated_OnRPC_Glob_z.push_back(dt_glob_z);
+				DT_extrapolated_OnRPC_Glob_eta.push_back(dt_glob_eta);
+				DT_extrapolated_OnRPC_Glob_phi.push_back(dt_glob_phi);
+				
+				DT_extrapolated_OnRPC_Region.push_back(rpcId.region());
+				DT_extrapolated_OnRPC_Sector.push_back(rpcId.sector());
+				DT_extrapolated_OnRPC_Station.push_back(rpcId.station());
+				DT_extrapolated_OnRPC_Layer.push_back(rpcId.layer());
+				DT_extrapolated_OnRPC_Roll.push_back(rpcId.roll());
+				DT_extrapolated_OnRPC_Ring.push_back(rpcId.ring());
+				DT_extrapolated_OnRPC_Stripw.push_back(stripw);
+						
+				DT_segment_onRPC++;
+		  
+			  }else {
+/*			    if(debug)*/ std::cout<<"DT \t \t \t \t No the prediction is outside of this roll"<<std::endl;
+			  }//Condition for the right match
+			}else{
+/*			  if(debug) */ std::cout<<"DT \t \t \t No, Exrtrapolation too long!, canceled"<<std::endl;
+			}//Distance is too big
+
+		}//loop over all the rolls asociated  
+	} //else: segments4D->size()<10
+  } // if: do you want extrapolation ?
+  
+  } // for on segment4D
+  } // for on chambIt
+  
   return;
-}
+} // close the function
 
 void TTreeGenerator::fill_dtphi_info(const DTChamberRecSegment2D* phiSeg, const GeomDet* chamb)
 {
@@ -953,11 +1144,12 @@ void TTreeGenerator::fill_rpc_variables(const edm::Event &e, edm::Handle<RPCRecH
     rpc_roll.push_back(roll);
     rpc_ring.push_back(ring);
     irpcrechits++;
+    
   }
   return;
 }
 
-void TTreeGenerator::analyzeUnpackingRpcRecHit(const edm::Event& event)
+void TTreeGenerator::analyzeUnpackingRpcRecHit(const edm::Event& event, const RPCGeometry* rpcGeom_)
 {
   edm::Handle<RPCRecHitCollection> UnpackingRpcHits;
   event.getByToken(UnpackingRpcRecHitToken_, UnpackingRpcHits);
@@ -975,6 +1167,11 @@ void TTreeGenerator::analyzeUnpackingRpcRecHit(const edm::Event& event)
     int subsector = rpcId.subsector();
     int roll = rpcId.roll();
     int ring = rpcId.ring();
+    
+    LocalPoint recHitPos=recHit->localPosition();
+    float loc_x = recHitPos.x();
+    float loc_y = recHitPos.y();
+    float loc_z = recHitPos.z();
 
 	if(OnlyBarrel_ && region != 0) continue;
 	    
@@ -988,6 +1185,27 @@ void TTreeGenerator::analyzeUnpackingRpcRecHit(const edm::Event& event)
     RpcRechit_TwinMux_subsector.push_back(subsector);
     RpcRechit_TwinMux_roll.push_back(roll);
     RpcRechit_TwinMux_ring.push_back(ring);
+    RpcRechit_TwinMux_Loc_x.push_back(loc_x);
+    RpcRechit_TwinMux_Loc_y.push_back(loc_y);
+    RpcRechit_TwinMux_Loc_z.push_back(loc_z);
+    
+
+
+    const RPCRoll * rollasociated = rpcGeom_->roll(rpcId);
+    const BoundPlane & RPCSurface = rollasociated->surface(); 
+    GlobalPoint RPCRecHitInGlobal = RPCSurface.toGlobal(recHitPos);
+    float glob_x = RPCRecHitInGlobal.x();
+    float glob_y = RPCRecHitInGlobal.y();
+    float glob_z = RPCRecHitInGlobal.z();
+    float glob_eta = RPCRecHitInGlobal.eta();
+    float glob_phi = RPCRecHitInGlobal.phi();
+    RpcRechit_TwinMux_Glob_x.push_back(glob_x);
+    RpcRechit_TwinMux_Glob_y.push_back(glob_y);
+    RpcRechit_TwinMux_Glob_z.push_back(glob_z);
+	RpcRechit_TwinMux_Glob_eta.push_back(glob_eta);
+	RpcRechit_TwinMux_Glob_phi.push_back(glob_phi);
+    
+    
     irpcrechits_TwinMux++;
   }
   return;
@@ -1023,6 +1241,471 @@ void TTreeGenerator::analyzeRPCunpacking(const edm::Event& event)
 		RpcDigi_TwinMux_rawId.push_back((*chamber).first.rawId()); 
 		irpcdigi_TwinMux++;
 	}  
+
+}
+
+void TTreeGenerator::extrapolate_DTsegment_onRPC(edm::Handle<DTRecSegment4DCollection> segments4D, const DTGeometry* dtGeom_, const RPCGeometry* rpcGeom_, const edm::EventSetup& iSetup)
+{
+// 	DT_segment_onRPC = 0;
+// 	
+// 	if(segments4D->size()>10){ //Too many segments in this event we are not doing the extrapolation
+// 		std::cout<<"-----------------------------Too many segments in this event we are not doing the extrapolation"<<std::endl;
+// 	}
+// 	else{
+// 		    std::map<DTChamberId,int> DTSegmentCounter;
+// 		    DTRecSegment4DCollection::const_iterator segment;  
+//   
+//     		for (segment = segments4D->begin();segment!=segments4D->end(); ++segment){
+// 			      DTSegmentCounter[segment->chamberId()]++;
+// 		    }
+// 		    
+// 		    for (segment = segments4D->begin(); segment != segments4D->end(); ++segment){
+// 		    
+// 		    	DTChamberId DTId = segment->chamberId();
+//       
+// // 				if(debug) std::cout<<"DT  \t \t This Segment is in Chamber id: "<<DTId<<std::endl;
+// // 				if(debug) std::cout<<"DT  \t \t Number of segments in this DT = "<<DTSegmentCounter[DTId]<<std::endl;
+// // 				if(debug) std::cout<<"DT  \t \t Is the only one in this DT? and is not in the 4th Station?"<<std::endl;
+// 
+//       			if(DTSegmentCounter[DTId]!=1 || DTId.station()==4){
+// // 					std::cout<<"DT \t \t More than one segment in this chamber, or we are in Station 4"<<std::endl;
+// 				    continue;
+// 				}
+// 				
+// 				int dtWheel = DTId.wheel();
+// 				int dtStation = DTId.station();
+// 				int dtSector = DTId.sector();      
+// 				
+// 				LocalPoint segmentPosition= segment->localPosition();
+// 				LocalVector segmentDirection=segment->localDirection();
+// 				
+// 				const GeomDet* gdet=dtGeom_->idToDet(segment->geographicalId());
+// 				const BoundPlane & DTSurface = gdet->surface();	 
+// 				
+// 				if(segment->dimension()!=4) continue;  //check if the dimension of the segment is 4
+// 				if((segment->phiSegment()->recHits()).size()<7) continue; //check if there are 2 phi superlayers fired (at least 7hits)
+// 				if((segment->zSegment()->recHits()).size()<4) continue; //check if there are at least 4 hits for the Z projection
+// 				
+// // 				if(debug) std::cout<<"DT  \t \t yes"<<std::endl;
+// // 				if(debug) std::cout<<"DT  \t \t DT Segment Dimension "<<segment->dimension()<<std::endl; 
+//     
+// 				float Xo=segmentPosition.x();
+// 				float Yo=segmentPosition.y();
+// 				float Zo=segmentPosition.z();
+// 				float dx=segmentDirection.x();
+// 				float dy=segmentDirection.y();
+// 				float dz=segmentDirection.z();
+//      
+// // 				if(debug)  std::cout<<"Calling to Object Map class"<<std::endl;
+// 				ObjectMap* TheObject = ObjectMap::GetInstance(iSetup);
+// // 				if(debug) std::cout<<"Creating the DTIndex"<<std::endl;
+// 				DTStationIndex theindex(0,dtWheel,dtSector,dtStation);
+// // 				if(debug) std::cout<<"Getting the Rolls for the given index"<<std::endl;
+// 				std::set<RPCDetId> rollsForThisDT = TheObject->GetInstance(iSetup)->GetRolls(theindex);
+// // 				if(debug) std::cout<<"DT  \t \t Number of rolls for this DT = "<<rollsForThisDT.size()<<std::endl;
+// 				assert(rollsForThisDT.size()>=1);				
+// 
+// // 				if(debug) std::cout<<"DT  \t \t Loop over all the rolls asociated to this DT"<<std::endl;
+// 				for (std::set<RPCDetId>::iterator iteraRoll = rollsForThisDT.begin();iteraRoll != rollsForThisDT.end(); iteraRoll++){
+// 					const RPCRoll* rollasociated = rpcGeom_->roll(*iteraRoll);
+// 					RPCDetId rpcId = rollasociated->id();
+// 					const BoundPlane & RPCSurface = rollasociated->surface(); 
+// 	
+// 					RPCGeomServ rpcsrv(rpcId);
+// 					std::string nameRoll = rpcsrv.name();
+// 	
+// // 					if(debug) std::cout<<"DT  \t \t \t RollName: "<<nameRoll<<std::endl;
+// // 					if(debug) std::cout<<"DT  \t \t \t Doing the extrapolation to this roll"<<std::endl;
+// // 					if(debug) std::cout<<"DT  \t \t \t DT Segment Direction in DTLocal "<<segmentDirection<<std::endl;
+// // 					if(debug) std::cout<<"DT  \t \t \t DT Segment Point in DTLocal "<<segmentPosition<<std::endl;
+// // 	
+// 					GlobalPoint CenterPointRollGlobal = RPCSurface.toGlobal(LocalPoint(0,0,0));
+// 
+// 					LocalPoint CenterRollinDTFrame = DTSurface.toLocal(CenterPointRollGlobal);
+// 	
+// // 					if(debug) std::cout<<"DT  \t \t \t Center (0,0,0) Roll In DTLocal"<<CenterRollinDTFrame<<std::endl;
+// // 					if(debug) std::cout<<"DT  \t \t \t Center (0,0,0) of the Roll in Global"<<CenterPointRollGlobal<<std::endl;
+// // 	
+// 					float D=CenterRollinDTFrame.z();
+// 	
+// 					float X=Xo+dx*D/dz;
+// 					float Y=Yo+dy*D/dz;
+// 					float Z=D;
+// 	
+// 					const RectangularStripTopology* top_= dynamic_cast<const RectangularStripTopology*> (&(rollasociated->topology()));
+// // 					std::cout<<"----------------------------------------------------------------------------------------------------stripw = "<<top_->pitch()<<std::endl;
+// 					LocalPoint xmin = top_->localPosition(0.);
+// // 					if(debug) std::cout<<"DT  \t \t \t xmin of this  Roll "<<xmin<<"cm"<<std::endl;
+// 					LocalPoint xmax = top_->localPosition((float)rollasociated->nstrips());
+// // 					if(debug) std::cout<<"DT  \t \t \t xmax of this  Roll "<<xmax<<"cm"<<std::endl;
+// 					float rsize = fabs( xmax.x()-xmin.x() );
+// // 					if(debug) std::cout<<"DT  \t \t \t Roll Size "<<rsize<<"cm"<<std::endl;
+// 					float stripl = top_->stripLength();
+// 	
+// 					float stripw = top_->pitch();
+// 	
+// // 					if(debug) std::cout<<"DT  \t \t \t Strip Lenght "<<stripl<<"cm"<<std::endl;
+// // 					if(debug) std::cout<<"DT  \t \t \t Strip Width "<<stripw<<"cm"<<std::endl;
+// // 					if(debug) std::cout<<"DT  \t \t \t X Predicted in DTLocal= "<<X<<"cm"<<std::endl;
+// // 					if(debug) std::cout<<"DT  \t \t \t Y Predicted in DTLocal= "<<Y<<"cm"<<std::endl;
+// // 					if(debug) std::cout<<"DT  \t \t \t Z Predicted in DTLocal= "<<Z<<"cm"<<std::endl;
+// 	
+// 					float extrapolatedDistance = sqrt((X-Xo)*(X-Xo)+(Y-Yo)*(Y-Yo)+(Z-Zo)*(Z-Zo));
+// 	
+// // 					if(debug) std::cout<<"DT  \t \t \t Is the distance of extrapolation less than MaxD? ="<<extrapolatedDistance<<"cm"<<"MaxD="<<MaxD<<"cm"<<std::endl;
+// 	
+// 					if(extrapolatedDistance<=MaxD){ 
+// // 					  if(debug) std::cout<<"DT  \t \t \t yes"<<std::endl;   
+// 					  GlobalPoint GlobalPointExtrapolated = DTSurface.toGlobal(LocalPoint(X,Y,Z));
+// // 					  if(debug) std::cout<<"DT  \t \t \t Point ExtraPolated in Global"<<GlobalPointExtrapolated<< std::endl;
+// 					  LocalPoint PointExtrapolatedRPCFrame = RPCSurface.toLocal(GlobalPointExtrapolated);
+// 					
+// // 					  if(debug) std::cout<<"DT  \t \t \t Point Extrapolated in RPCLocal"<<PointExtrapolatedRPCFrame<< std::endl;
+// // 					  if(debug) std::cout<<"DT  \t \t \t Corner of the Roll = ("<<rsize*eyr<<","<<stripl*eyr<<")"<<std::endl;
+// // 					  if(debug) std::cout<<"DT \t \t \t Info About the Point Extrapolated in X Abs ("<<fabs(PointExtrapolatedRPCFrame.x())<<","
+// // 							     <<fabs(PointExtrapolatedRPCFrame.y())<<","<<fabs(PointExtrapolatedRPCFrame.z())<<")"<<std::endl;
+// // 					  if(debug) std::cout<<"DT  \t \t \t Does the extrapolation go inside this roll?"<<std::endl;
+// 					
+// 					  if(fabs(PointExtrapolatedRPCFrame.z()) < 1. && 
+// 					     fabs(PointExtrapolatedRPCFrame.x()) < rsize*eyr && 
+// 					     fabs(PointExtrapolatedRPCFrame.y()) < stripl*eyr){
+// // 					    if(debug) std::cout<<"DT  \t \t \t \t yes"<<std::endl;	
+// // 					    if(debug) std::cout<<"DT  \t \t \t \t Creating the RecHit"<<std::endl;
+// 
+// 					    LocalVector segmentDirection=segment->localDirection();
+// 					    float dx=segmentDirection.x();
+// 					    float dz=segmentDirection.z();
+// 					    float cosal = dx/sqrt(dx*dx+dz*dz);
+// 					    float angle = acos(cosal)*180/3.1415926;
+// 					    					    
+// 					    RPCRecHit RPCPoint(rpcId,0,LocalPoint(PointExtrapolatedRPCFrame.x(),PointExtrapolatedRPCFrame.y(),angle));
+// 
+// 						float dt_loc_x = PointExtrapolatedRPCFrame.x();
+// 						float dt_loc_y = PointExtrapolatedRPCFrame.y();
+// 						float dt_loc_z = PointExtrapolatedRPCFrame.z();
+// 						float dt_glob_x = GlobalPointExtrapolated.x();
+// 						float dt_glob_y = GlobalPointExtrapolated.y();
+// 						float dt_glob_z = GlobalPointExtrapolated.z();
+// 						float dt_glob_eta = GlobalPointExtrapolated.eta();
+// 						float dt_glob_phi = GlobalPointExtrapolated.phi();
+// 						
+// 						DT_extrapolated_OnRPC_BX.push_back(RPCPoint.BunchX());
+// 						
+// 						DT_extrapolated_OnRPC_Loc_x.push_back(dt_loc_x);
+// 						DT_extrapolated_OnRPC_Loc_y.push_back(dt_loc_y);
+// 						DT_extrapolated_OnRPC_Loc_z.push_back(dt_loc_z);
+// 						
+// 						DT_extrapolated_OnRPC_Glob_x.push_back(dt_glob_x);
+// 						DT_extrapolated_OnRPC_Glob_y.push_back(dt_glob_y);
+// 						DT_extrapolated_OnRPC_Glob_z.push_back(dt_glob_z);
+// 						DT_extrapolated_OnRPC_Glob_eta.push_back(dt_glob_eta);
+// 						DT_extrapolated_OnRPC_Glob_phi.push_back(dt_glob_phi);
+// 						
+// 						DT_extrapolated_OnRPC_Region.push_back(rpcId.region());
+// 						DT_extrapolated_OnRPC_Sector.push_back(rpcId.sector());
+// 						DT_extrapolated_OnRPC_Station.push_back(rpcId.station());
+// 						DT_extrapolated_OnRPC_Layer.push_back(rpcId.layer());
+// 						DT_extrapolated_OnRPC_Roll.push_back(rpcId.roll());
+// 						DT_extrapolated_OnRPC_Ring.push_back(rpcId.ring());
+// 						DT_extrapolated_OnRPC_Stripw.push_back(stripw);
+// 												
+// 						DT_segment_onRPC++;
+// 						
+// // 					    if(debug) std::cout<<"DT  \t \t \t \t Clearing the vector"<<std::endl; 
+// // 					    RPCPointVector.clear();
+// // 					    if(debug) std::cout<<"DT  \t \t \t \t Pushing back"<<std::endl;	
+// // 					    RPCPointVector.push_back(RPCPoint); 
+// // 					    if(debug) std::cout<<"DT  \t \t \t \t Putting the vector"<<std::endl;	
+// // 					    _ThePoints->put(rpcId,RPCPointVector.begin(),RPCPointVector.end());
+// 
+// // 					    if(debug) std::cout<<"DT \t \t \t \t Filling container with "<<nameRoll
+// // 				 			<<" Point.x="<<PointExtrapolatedRPCFrame.x()<<" Point.y="<<PointExtrapolatedRPCFrame.y()<<" size="<<RPCPointVector.size()<<std::endl;
+// 					  
+// 					  }else {
+// /*					    if(debug)*/ std::cout<<"DT \t \t \t \t No the prediction is outside of this roll"<<std::endl;
+// 					  }//Condition for the right match
+// 					}else{
+// /*					  if(debug) */ std::cout<<"DT \t \t \t No, Exrtrapolation too long!, canceled"<<std::endl;
+// 					}//D so big
+// 
+// 
+// 				}//loop over all the rolls asociated
+// 
+// 		    
+// 		    }
+//       
+
+
+//       }
+//     }
+//   
+//     if(incldtMB4){
+//       if(all4DSegments->size()>0){     
+// 	if(debug) std::cout<<"MB4 \t \t Loop Over all4DSegments "<<all4DSegments->size()<<std::endl;
+// 	extrapolatedRolls.clear();
+// 	for (segment = all4DSegments->begin(); segment != all4DSegments->end(); ++segment){ 
+//     
+// 	  DTChamberId DTId = segment->chamberId();
+// 	
+// 	  if(debug) std::cout<<"MB4 \t \t This Segment is in Chamber id: "<<DTId<<std::endl;
+// 	  if(debug) std::cout<<"MB4 \t \t Number of segments in this DT = "<<DTSegmentCounter[DTId]<<std::endl;
+// 	  if(debug) std::cout<<"MB4 \t \t \t Is the only one in this DT? and is in the Station 4?"<<std::endl;
+// 
+// 	  if(DTSegmentCounter[DTId] == 1 && DTId.station()==4){
+// 
+// 	    if(debug) std::cout<<"MB4 \t \t \t yes"<<std::endl;
+// 	    int dtWheel = DTId.wheel();
+// 	    int dtStation = DTId.station();
+// 	    int dtSector = DTId.sector();
+//       
+// 	    LocalPoint segmentPosition= segment->localPosition();
+// 	    LocalVector segmentDirection=segment->localDirection();
+// 	    
+// 	    if(debug) std::cout<<"MB4 \t \t \t \t The Segment in MB4 is 2D?"<<std::endl;
+// 	    if(segment->dimension()==2){
+// 	      if(debug) std::cout<<"MB4 \t \t \t \t yes"<<std::endl;
+// 	      LocalVector segmentDirectionMB4=segmentDirection;
+// 	      LocalPoint segmentPositionMB4=segmentPosition;
+// 	    
+// 	      const BoundPlane& DTSurface4 = dtGeo->idToDet(DTId)->surface();
+// 	        
+// 	      DTRecSegment4DCollection::const_iterator segMB3;  
+// 	        
+// 	      if(debug) std::cout<<"MB4 \t \t \t \t Loop on segments in =sector && MB3 && adjacent sectors && y dim=4"<<std::endl;
+// 	      for(segMB3=all4DSegments->begin();segMB3!=all4DSegments->end();++segMB3){
+// 	            
+// 		DTChamberId dtid3 = segMB3->chamberId();  
+// 		
+// 		if(debug) std::cout<<"MB4  \t \t \t \t Segment in Chamber ="<<dtid3<<std::endl;
+// 	            
+// 		if(distsector(dtid3.sector(),DTId.sector())<=1 //The DT sector could be 13 or 14 and because is corrected in the calculation of the distance.
+// 		   && distwheel(dtid3.wheel(),DTId.wheel())<=1 //The we could have segments in neighbohr wheels in pp collisions 
+// 		   && dtid3.station()==3
+// 		   && DTSegmentCounter[dtid3] == 1
+// 		   && segMB3->dimension()==4){
+// 		  
+// 		  if(debug) std::cout<<"MB4  \t \t \t \t distsector ="<<distsector(dtid3.sector(),DTId.sector())<<std::endl;
+// 		  if(debug) std::cout<<"MB4  \t \t \t \t distwheel ="<<distwheel(dtid3.wheel(),DTId.wheel())<<std::endl;
+// 
+// 		  const GeomDet* gdet3=dtGeo->idToDet(segMB3->geographicalId());
+// 		  const BoundPlane & DTSurface3 = gdet3->surface();
+// 
+// 		  LocalVector segmentDirectionMB3 =  segMB3->localDirection();
+// 		  GlobalPoint segmentPositionMB3inGlobal = DTSurface3.toGlobal(segMB3->localPosition());
+// 		  GlobalPoint segmentPositionMB4inGlobal = DTSurface4.toGlobal(segmentPosition);
+// 		
+// 		  LocalVector segDirMB3inMB4Frame=DTSurface4.toLocal(DTSurface3.toGlobal(segmentDirectionMB3));
+// 		
+// 		  GlobalVector segDirMB4inGlobalFrame=DTSurface4.toGlobal(segmentDirectionMB4);
+// 		  GlobalVector segDirMB3inGlobalFrame=DTSurface3.toGlobal(segmentDirectionMB3);
+// 		
+// 		  float dx=segDirMB4inGlobalFrame.x();
+// 		  float dy=segDirMB4inGlobalFrame.y();
+// 				
+// 		  float dx3=segDirMB3inGlobalFrame.x();
+// 		  float dy3=segDirMB3inGlobalFrame.y();
+// 				
+// 		  double cosAng=fabs(dx*dx3+dy*dy3/sqrt((dx3*dx3+dy3*dy3)*(dx*dx+dy*dy)));
+// 		  
+// 		  if(debug) std::cout<<"MB4 \t \t \t \t cosAng"<<cosAng<<"Beetween "<<dtid3<<" and "<<DTId<<std::endl;
+// 		  
+// 		  if(debug){
+// 		    std::cout<<"MB4 \t \t \t \t dx="<<dx<<" dy="<<dy<<std::endl;
+// 		    std::cout<<"MB4 \t \t \t \t dx3="<<dx3<<" dy3="<<dy<<std::endl;
+// 		    std::cout<<"MB4 \t \t \t \t cosAng="<<cosAng<<std::endl;
+// 		  }
+// 
+// 		  float DistanceBetweenSegments = ((segmentPositionMB3inGlobal) - (segmentPositionMB4inGlobal)).mag();
+// 		  
+// 		  if(cosAng>MinCosAng && DistanceBetweenSegments < MaxDistanceBetweenSegments){
+// 		    
+// 		    if(debug) std::cout<<"MB4 \t \t \t \t Distance between segments="<<DistanceBetweenSegments<<std::endl;
+// 		  
+// 		    if(debug) std::cout<<"MB4 \t \t We found compatible Segments (similar direction and close enough) in "<<dtid3<<" and "<<DTId<<std::endl;
+// 
+// 		    if(dtSector==13){
+// 		      dtSector=4;
+// 		    }
+// 		    if(dtSector==14){
+// 		      dtSector=10;
+// 		    }
+// 		   
+// 		    if(debug)  std::cout<<"Calling to Object Map class"<<std::endl;
+// 		    ObjectMap* TheObject = ObjectMap::GetInstance(iSetup);
+// 		    if(debug) std::cout<<"Creating the DTIndex"<<std::endl;
+// 		    DTStationIndex theindex(0,dtWheel,dtSector,dtStation);
+// 		    if(debug) std::cout<<"Getting the Rolls for the given index"<<std::endl;
+// 
+// 		    std::set<RPCDetId> rollsForThisDT = TheObject->GetInstance(iSetup)->GetRolls(theindex);
+// 
+// 		    if(debug) std::cout<<"MB4 \t \t Number of rolls for this DT = "<<rollsForThisDT.size()<<std::endl;
+// 		    
+// 		    assert(rollsForThisDT.size()>=1);
+// 		        
+// 		    if(debug) std::cout<<"MB4  \t \t Loop over all the rolls asociated to this DT"<<std::endl;
+// 		    for (std::set<RPCDetId>::iterator iteraRoll=rollsForThisDT.begin();iteraRoll != rollsForThisDT.end(); iteraRoll++){
+// 		      const RPCRoll* rollasociated = rpcGeo->roll(*iteraRoll); //roll asociated to MB4
+// 		      RPCDetId rpcId = rollasociated->id();
+// 		      const BoundPlane & RPCSurfaceRB4 = rollasociated->surface(); //surface MB4
+// 
+// 		      RPCGeomServ rpcsrv(rpcId);
+// 		      std::string nameRoll = rpcsrv.name();
+// 
+// 		      if(debug) std::cout<<"MB4  \t \t \t RollName: "<<nameRoll<<std::endl;
+// 		      if(debug) std::cout<<"MB4  \t \t \t Doing the extrapolation to this roll"<<std::endl;
+// 		        
+// 		      GlobalPoint CenterPointRollGlobal=RPCSurfaceRB4.toGlobal(LocalPoint(0,0,0));
+// 		      LocalPoint CenterRollinMB4Frame = DTSurface4.toLocal(CenterPointRollGlobal); //In MB4
+// 		      LocalPoint segmentPositionMB3inMB4Frame = DTSurface4.toLocal(segmentPositionMB3inGlobal); //In MB4
+// 		      //LocalPoint segmentPositionMB3inRB4Frame = RPCSurfaceRB4.toLocal(segmentPositionMB3inGlobal); //In MB4
+// 		      LocalVector segmentDirectionMB3inMB4Frame = DTSurface4.toLocal(segDirMB3inGlobalFrame); //In MB4
+// 		        
+// 		      //The exptrapolation is done in MB4 frame. for local x and z is done from MB4,
+// 		      float Dxz=CenterRollinMB4Frame.z();
+// 		      float Xo4=segmentPositionMB4.x();
+// 		      float dxl=segmentDirectionMB4.x(); //dx local for MB4 segment in MB4 Frame
+// 		      float dzl=segmentDirectionMB4.z(); //dx local for MB4 segment in MB4 Frame
+// 		        
+// 		      float X=Xo4+dxl*Dxz/dzl; //In MB4 frame
+// 		      float Z=Dxz;//In MB4 frame
+// 		        
+// 		      //for local y is done from MB3 
+// 		      float Yo34 = segmentPositionMB3inMB4Frame.y();
+// 		      float dy34 = segmentDirectionMB3inMB4Frame.y();
+// 		      float dz34 = segmentDirectionMB3inMB4Frame.z();
+// 		      float Dy=Dxz-(segmentPositionMB3inMB4Frame.z()); //Distance beetween the segment in MB3 and the RB4 surface
+// 
+// 		      if(debug) std::cout<<"MB4 \t \t \t The distance to extrapolate in Y from MB3 is "<<Dy<<"cm"<<std::endl;
+// 		        
+// 		      float Y=Yo34+dy34*Dy/dz34;//In MB4 Frame
+// 		          
+// 		      const RectangularStripTopology* top_
+// 			=dynamic_cast<const RectangularStripTopology*>(&(rollasociated->topology())); //Topology roll asociated MB4
+// 		      LocalPoint xmin = top_->localPosition(0.);
+// 		      LocalPoint xmax = top_->localPosition((float)rollasociated->nstrips());
+// 		      float rsize = fabs( xmax.x()-xmin.x() );
+// 		      float stripl = top_->stripLength();
+// 		      float stripw = top_->pitch();
+// 
+// 			    
+// 		      if(debug) std::cout<<"MB4 \t \t \t Strip Lenght "<<stripl<<"cm"<<std::endl;
+// 		      if(debug) std::cout<<"MB4 \t \t \t Strip Width "<<stripw<<"cm"<<std::endl;
+// 
+// 		      if(debug) std::cout<<"MB4 \t \t \t X Predicted in MB4DTLocal= "<<X<<"cm"<<std::endl;
+// 		      if(debug) std::cout<<"MB4 \t \t \t Y Predicted in MB4DTLocal= "<<Y<<"cm"<<std::endl;
+// 		      if(debug) std::cout<<"MB4 \t \t \t Z Predicted in MB4DTLocal= "<<Z<<"cm"<<std::endl;
+// 
+// 		      float extrapolatedDistance = sqrt((Y-Yo34)*(Y-Yo34)+Dy*Dy);
+// 
+// 		      if(debug) std::cout<<"MB4 \t \t \t segmentPositionMB3inMB4Frame"<<segmentPositionMB3inMB4Frame<<std::endl;
+// 		      if(debug) std::cout<<"MB4 \t \t \t segmentPositionMB4inMB4Frame"<<segmentPosition<<std::endl;
+// 
+// 		      if(debug) std::cout<<"MB4 \t \t \t segmentDirMB3inMB4Frame"<<segDirMB3inMB4Frame<<std::endl;
+// 		      if(debug) std::cout<<"MB4 \t \t \t segmentDirMB4inMB4Frame"<<segmentDirectionMB4<<std::endl;
+// 			    
+// 		      if(debug) std::cout<<"MB4 \t \t \t CenterRB4PositioninMB4Frame"<<CenterRollinMB4Frame<<std::endl;
+// 			    
+// 		      if(debug) std::cout<<"MB4 \t \t \t Is the extrapolation distance ="<<extrapolatedDistance<<"less than "<<MaxDrb4<<std::endl;
+//     
+// 
+// 		      if(extrapolatedDistance<=MaxDrb4){ 
+// 			if(debug) std::cout<<"MB4 \t \t \t yes"<<std::endl;
+// 
+// 			GlobalPoint GlobalPointExtrapolated = DTSurface4.toGlobal(LocalPoint(X,Y,Z));
+// 			        
+// 			if(debug) std::cout<<"MB4 \t \t \t Point ExtraPolated in Global"<<GlobalPointExtrapolated<< std::endl;
+// 			        
+// 			LocalPoint PointExtrapolatedRPCFrame = RPCSurfaceRB4.toLocal(GlobalPointExtrapolated);
+// 
+// 			if(debug) std::cout<<"MB4 \t \t \t Point Extrapolated in RPCLocal"<<PointExtrapolatedRPCFrame<< std::endl;
+// 			if(debug) std::cout<<"MB4 \t \t \t Corner of the Roll = ("<<rsize*eyr<<","<<stripl*eyr<<")"<<std::endl;
+// 			if(debug) std::cout<<"MB4 \t \t \t Info About the Point Extrapolated in X Abs ("<<fabs(PointExtrapolatedRPCFrame.x())<<","
+// 					   <<fabs(PointExtrapolatedRPCFrame.y())<<","<<fabs(PointExtrapolatedRPCFrame.z())<<")"<<std::endl;
+// 			  
+// 			if(debug) std::cout<<"MB4 \t \t \t Does the extrapolation go inside this roll?"<<std::endl;
+// 			  
+// 			if(fabs(PointExtrapolatedRPCFrame.z()) < 5.  &&
+// 			   fabs(PointExtrapolatedRPCFrame.x()) < rsize*eyr &&
+// 			   fabs(PointExtrapolatedRPCFrame.y()) < stripl*eyr){
+// 			  if(debug) std::cout<<"MB4 \t \t \t \t yes"<<std::endl;
+// 			  if(debug) std::cout<<"MB4 \t \t \t \t Creating the RecHit"<<std::endl;
+// 
+// 			  LocalVector segmentDirection=segment->localDirection();
+// 			  float dx=segmentDirection.x();
+// 			  float dz=segmentDirection.z();
+// 			  float cosal = dx/sqrt(dx*dx+dz*dz);
+// 			  float angle = acos(cosal)*180/3.1415926;
+// 
+// 			  RPCRecHit RPCPointMB4(rpcId,0,LocalPoint(PointExtrapolatedRPCFrame.x(),PointExtrapolatedRPCFrame.y(),angle));
+// 			  if(debug) std::cout<<"MB4 \t \t \t \t Clearing the RPCPointVector"<<std::endl;
+// 			  RPCPointVector.clear();
+// 			  if(debug) std::cout<<"MB4 \t \t \t \t Pushing Back"<<std::endl;
+// 			  RPCPointVector.push_back(RPCPointMB4);
+// 			  if(debug) std::cout<<"MB4 \t \t \t \t Putting for "<<rpcId<<std::endl;
+// 			  if(debug) std::cout<<"MB4 \t \t \t \t Filling container with "<<nameRoll
+// 					     <<" Point.x="<<PointExtrapolatedRPCFrame.x()<<" Point.y="<<PointExtrapolatedRPCFrame.y()<<" size="<<RPCPointVector.size()<<std::endl;
+// 			  if(debug) std::cout<<"MB4 \t \t \t \t Number of rolls already extrapolated in RB4 = "<<extrapolatedRolls.size()<<std::endl;
+// 			  if(find (extrapolatedRolls.begin(),extrapolatedRolls.end(),rpcId.rawId()) == extrapolatedRolls.end()){
+// 			    extrapolatedRolls.push_back(rpcId.rawId());
+// 			    _ThePoints->put(rpcId,RPCPointVector.begin(),RPCPointVector.end());
+// 			  }else{
+// 			    if(debug) std::cout<<"MB4 \t \t \t \t roll already extrapolated "<<rpcId<<std::endl;
+// 			  }
+// 			  if(debug) std::cout<<"MB4 \t \t \t \t Extrapolations done after this point = "<<extrapolatedRolls.size()<<std::endl;
+// 			  if(debug) for(uint32_t m=0;m<extrapolatedRolls.size();m++) std::cout<<"MB4 \t \t \t \t"<< extrapolatedRolls.at(m)<<std::endl;
+// 			}else{
+// 			  if(debug) std::cout<<"MB4 \t \t \t \t No the prediction is outside of this roll"<<std::endl;
+// 			}
+// 		      }//Condition for the right match
+// 		      else{
+// 			if(debug) std::cout<<"MB4 \t \t \t No, Exrtrapolation too long!, canceled"<<std::endl;
+// 		      }
+// 		    }//loop over all the rollsasociated
+// 		  }else{
+// 		    if(debug) std::cout<<"MB4 \t \t \t \t I found segments in MB4 and MB3 adjacent wheel and/or sector but not compatibles, Diferent Directions"<<std::endl;
+// 		  }
+// 		}else{//if dtid3.station()==3&&dtid3.sector()==DTId.sector()&&dtid3.wheel()==DTId.wheel()&&segMB3->dim()==4
+// 		  if(debug) std::cout<<"MB4 \t \t \t No the same station or same wheel or segment dim in mb3 not 4D"<<std::endl;
+// 		}
+// 	      }//loop over all the segments looking for one in MB3 
+// 	    }else{
+// 	      if(debug) std::cout<<"MB4 \t \t \t Is NOT a 2D Segment"<<std::endl;
+// 	    }
+// 	  }else{
+// 	    if(debug) std::cout<<"MB4 \t \t \t \t There is not just one segment or is not in station 4"<<std::endl;
+// 	  }//De aca para abajo esta en dtpart.inl
+// 	}
+//       }else{
+// 	if(debug) std::cout<<"MB4 \t This event doesn't have 4D Segment"<<std::endl;
+//       }
+//     }
+		    
+		    
+		    
+		    
+		    
+		    
+		    
+		    
+		    
+		    
+		    
+		    
+		    
+		    
+		    
+		    
+		    
+		    
+// 	}
+
+
+	
+	
+// 	
+// 	for (DTRecSegment4DCollection::const_iterator segment = all4DSegments->begin(); segment != all4DSegments->end(); ++segment){
+// 		std::cout<<"----------------------------------------------------------------------ciao"<<std::endl;
+// 	}
 
 }
 
@@ -1399,6 +2082,33 @@ void TTreeGenerator::beginJob()
    tree_->Branch("RpcRecHitTwinMuxSubsector", &RpcRechit_TwinMux_subsector);
    tree_->Branch("RpcRecHitTwinMuxRoll", &RpcRechit_TwinMux_roll);
    tree_->Branch("RpcRecHitTwinMuxRing", &RpcRechit_TwinMux_ring);
+   tree_->Branch("RpcRechitTwinMuxLocX", &RpcRechit_TwinMux_Loc_x);
+   tree_->Branch("RpcRechitTwinMuxLocY", &RpcRechit_TwinMux_Loc_y);
+   tree_->Branch("RpcRechitTwinMuxLocZ", &RpcRechit_TwinMux_Loc_z);
+   tree_->Branch("RpcRechitTwinMuxGlobX", &RpcRechit_TwinMux_Glob_x);
+   tree_->Branch("RpcRechitTwinMuxGlobY", &RpcRechit_TwinMux_Glob_y);
+   tree_->Branch("RpcRechitTwinMuxGlobZ", &RpcRechit_TwinMux_Glob_z);
+   tree_->Branch("RpcRechitTwinMuxGlobEta", &RpcRechit_TwinMux_Glob_eta);
+   tree_->Branch("RpcRechitTwinMuxGlobPhi", &RpcRechit_TwinMux_Glob_phi);
+      
+   tree_->Branch("DTextrapolatedOnRPCBX", &DT_extrapolated_OnRPC_BX);
+   tree_->Branch("DTextrapolatedOnRPCLocX", &DT_extrapolated_OnRPC_Loc_x);
+   tree_->Branch("DTextrapolatedOnRPCLocY", &DT_extrapolated_OnRPC_Loc_y);
+   tree_->Branch("DTextrapolatedOnRPCLocZ", &DT_extrapolated_OnRPC_Loc_z);
+   tree_->Branch("DTextrapolatedOnRPCGlobX", &DT_extrapolated_OnRPC_Glob_x);
+   tree_->Branch("DTextrapolatedOnRPCGlobY", &DT_extrapolated_OnRPC_Glob_y);
+   tree_->Branch("DTextrapolatedOnRPCGlobZ", &DT_extrapolated_OnRPC_Glob_z);
+   tree_->Branch("DTextrapolatedOnRPCGlobEta", &DT_extrapolated_OnRPC_Glob_eta);
+   tree_->Branch("DTextrapolatedOnRPCGlobPhi", &DT_extrapolated_OnRPC_Glob_phi);
+   tree_->Branch("DTextrapolatedOnRPCRegion", &DT_extrapolated_OnRPC_Region);
+   tree_->Branch("DTextrapolatedOnRPCSector", &DT_extrapolated_OnRPC_Sector);
+   tree_->Branch("DTextrapolatedOnRPCStation", &DT_extrapolated_OnRPC_Station);
+   tree_->Branch("DTextrapolatedOnRPCLayer", &DT_extrapolated_OnRPC_Layer);
+   tree_->Branch("DTextrapolatedOnRPCRoll", &DT_extrapolated_OnRPC_Roll);
+   tree_->Branch("DTextrapolatedOnRPCRing", &DT_extrapolated_OnRPC_Ring);
+   tree_->Branch("DTextrapolatedOnRPCStripw", &DT_extrapolated_OnRPC_Stripw);
+   tree_->Branch("NDTsegmentonRPC", &DT_segment_onRPC);
+      
 
   return;
 }
@@ -1631,7 +2341,31 @@ inline void TTreeGenerator::clear_Arrays()
    RpcRechit_TwinMux_subsector.clear();
    RpcRechit_TwinMux_roll.clear();
    RpcRechit_TwinMux_ring.clear();
-  
+   RpcRechit_TwinMux_Loc_x.clear();
+   RpcRechit_TwinMux_Loc_y.clear();
+   RpcRechit_TwinMux_Loc_z.clear(); 
+   RpcRechit_TwinMux_Glob_x.clear();
+   RpcRechit_TwinMux_Glob_y.clear();
+   RpcRechit_TwinMux_Glob_z.clear(); 
+   RpcRechit_TwinMux_Glob_eta.clear(); 
+   RpcRechit_TwinMux_Glob_phi.clear(); 
+
+   DT_extrapolated_OnRPC_BX.clear();
+   DT_extrapolated_OnRPC_Loc_x.clear();
+   DT_extrapolated_OnRPC_Loc_y.clear();
+   DT_extrapolated_OnRPC_Loc_z.clear();
+   DT_extrapolated_OnRPC_Glob_x.clear();
+   DT_extrapolated_OnRPC_Glob_y.clear();
+   DT_extrapolated_OnRPC_Glob_z.clear();
+   DT_extrapolated_OnRPC_Glob_eta.clear();
+   DT_extrapolated_OnRPC_Glob_phi.clear();
+   DT_extrapolated_OnRPC_Region.clear();
+   DT_extrapolated_OnRPC_Sector.clear();
+   DT_extrapolated_OnRPC_Station.clear();
+   DT_extrapolated_OnRPC_Layer.clear();
+   DT_extrapolated_OnRPC_Roll.clear();
+   DT_extrapolated_OnRPC_Ring.clear();
+   DT_extrapolated_OnRPC_Stripw.clear();
   return;
 }
 
