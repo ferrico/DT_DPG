@@ -19,10 +19,12 @@ myDTNtuple = cms.EDAnalyzer('TTreeGenerator',
                             dtTrigTwinMuxOutSize = cms.int32(50),
                             dtTrigTwinMuxThSize = cms.int32(50),
                             gmtSize       = cms.int32(50), # legacy
+                            hltSize       = cms.int32(150),
                             STAMuSize     = cms.int32(20),
                             rpcRecHitSize = cms.int32(300),
                             PrimaryVertexTag = cms.InputTag("offlinePrimaryVertices"),
-                            TriggerTag = cms.InputTag("TriggerResults::HLT"),
+                            TriggerResultsTag = cms.InputTag("TriggerResults::HLT"),
+                            TriggerEventTag   = cms.InputTag("hltTriggerSummaryAOD::HLT"),
                             beamSpotTag = cms.InputTag("offlineBeamSpot"),
                             scalersResults = cms.InputTag("scalersRawToDigi"),
                             lumiInputTag   = cms.InputTag("lumiProducer"),
@@ -30,18 +32,18 @@ myDTNtuple = cms.EDAnalyzer('TTreeGenerator',
                             runOnSimulation = cms.bool(False),
                             runOnSimulationWithDigis = cms.bool(False),
                             localDTmuons    = cms.bool(False),
-#                             bmtfInputPhDigis = cms.InputTag("BMTFStage2Digis"),
-#                             bmtfInputThDigis = cms.InputTag("BMTFStage2Digis"),
-#                             bmtfOutputDigis = cms.InputTag("BMTFStage2Digis"),
+                            #  bmtfInputPhDigis = cms.InputTag("BMTFStage2Digis"),
+                            #  bmtfInputThDigis = cms.InputTag("BMTFStage2Digis"),
+                            #  bmtfOutputDigis = cms.InputTag("BMTFStage2Digis"),
                             bmtfInputPhDigis = cms.InputTag("bmtfDigis"),
                             bmtfInputThDigis = cms.InputTag("bmtfDigis"),
                             bmtfOutputDigis = cms.InputTag("bmtfDigis"),
                             rpcLabel                  = cms.InputTag("rpcUnpackingModule"),
                             UnpackingRpcRecHitLabel = cms.InputTag("rpcRecHits", "", "DTNT"), # from unpacking RPC
                             OnlyBarrel = cms.bool(False), # Set False to save all rpc info (not only for Barrel)
-                            dtExtrapolation = cms.bool(True), #Set False if DT extrapolation on RPC layer is not needed
-#                             UnpackingRpcRecHitLabel = cms.InputTag("rpcRecHits", "", "DTNTandRPC"), # from unpacking RPC
-           ######## Parameters for retrieving the ttrig to correct the recHit times
+			    dtExtrapolation = cms.bool(True), #Set False if DT extrapolation on RPC layer is not needed
+                            #  UnpackingRpcRecHitLabel = cms.InputTag("rpcRecHits", "", "DTNTandRPC"), # from unpacking RPC
+                            ##  Parameters for retrieving the ttrig to correct the recHit times
                             tTrigModeConfig = cms.untracked.PSet(
                                   vPropWire = cms.double(24.4),
                                   doTOFCorrection = cms.bool(False),
@@ -55,7 +57,7 @@ myDTNtuple = cms.EDAnalyzer('TTreeGenerator',
                                   debug = cms.untracked.bool(False)
                               ),
                               tTrigMode = cms.untracked.string('DTTTrigSyncFromDB')
-           ######## END Parameters for retrieving the ttrig to correct the recHit times
+                            ## END Parameters for retrieving the ttrig to correct the recHit times
 
                               
 )
